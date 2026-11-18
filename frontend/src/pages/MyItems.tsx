@@ -235,7 +235,11 @@ function MyClaims() {
         <div key={c.id} className="my-row">
           <ItemCard item={c.item} to={`/claims/${c.id}`} />
           <div className="my-row__actions">
-            <span className={`status status--claim-${c.status}`}>{t(`claimStatus.${c.status}`)}</span>
+            {c.handover?.completed ? (
+              <span className="status status--returned">{t('status.returned')}</span>
+            ) : (
+              <span className={`status status--claim-${c.status}`}>{t(`claimStatus.${c.status}`)}</span>
+            )}
             <Link className="btn btn--ghost" to={`/claims/${c.id}`}>{t('my.openClaim')}</Link>
           </div>
         </div>

@@ -72,7 +72,7 @@ export default function Settings() {
             }}
           >
             <label htmlFor="s-name">{t('settings.displayName')}</label>
-            <div className="row" style={{ flexWrap: 'nowrap' }}>
+            <div className="inline-field">
               <input id="s-name" className="input" value={name} onChange={(e) => setName(e.target.value)} maxLength={40} />
               <Button type="submit" variant="ghost" loading={saving === 'name'} disabled={name.trim().length < 2 || name.trim() === user.displayName}>
                 {t('app.save')}

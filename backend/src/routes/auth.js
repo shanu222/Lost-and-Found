@@ -10,7 +10,7 @@ import { encrypt } from '../lib/crypto.js';
 import { badRequest, forbidden, unauthorized } from '../lib/errors.js';
 import { normalizePhone } from '../lib/phone.js';
 import { countryCode, validate } from '../lib/validate.js';
-import { authLimiter, otpLimiter } from '../middleware/rateLimit.js';
+import { authLimiter, otpLimiter, refreshLimiter } from '../middleware/rateLimit.js';
 import { sendOtp, verifyOtp } from '../services/otp.js';
 import {
   REFRESH_COOKIE,
@@ -123,7 +123,7 @@ authRouter.post(
 );
 
 // Rotate the refresh cookie and return a fresh access token.
-authRouter.post('/refresh', authLimiter, async (req, res) => {
+authRouter.post('/refresh', refreshLimiter, async (req, res) => {
   try {
     const { user, accessToken, refresh } = await rotateRefreshToken(req.cookies?.[REFRESH_COOKIE], req);
     setRefreshCookie(res, refresh);

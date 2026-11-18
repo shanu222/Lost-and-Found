@@ -116,6 +116,15 @@ a {
 img {
   max-width: 100%;
 }
+fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+legend {
+  padding: 0;
+}
 
 :focus-visible {
   outline: none;
@@ -2075,4 +2084,18 @@ input[type='range'] {
   display: block;
   height: 100%;
   background: var(--harbour-500);
+}
+
+/* Input + button on one line that never overflows on small screens */
+.inline-field {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+.inline-field .input {
+  flex: 1;
+  min-width: 0;
+}
+.inline-field .btn {
+  flex: 0 0 auto;
 }

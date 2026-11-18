@@ -142,7 +142,7 @@ function CodeSection({ h, busy, onComplete }: { h: H; busy: boolean; onComplete:
     <section className="panel stack" aria-labelledby="enter-title">
       <h2 id="enter-title">{t('handover.enterCode')}</h2>
       <p className="muted">{t('handover.enterBody')}</p>
-      <div className="row" style={{ flexWrap: 'nowrap' }}>
+      <div className="inline-field">
         <input className="input input--code" inputMode="numeric" maxLength={6} value={code} aria-label={t('handover.codeLabel')} onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} />
         <Button variant="ghost" onClick={() => { setScanError(null); setScanning((s) => !s); }} aria-pressed={scanning}>
           <QrIcon /> {scanning ? t('handover.stopScan') : t('handover.scan')}
@@ -175,7 +175,7 @@ function PlanSection({ h, busy, onSave }: { h: H; busy: boolean; onSave: (b: Rec
       <h2 id="plan-title">{t('handover.planTitle')}</h2>
       <fieldset className="choice-list">
         <legend className="field__label">{t('handover.method')}</legend>
-        {(['meet', 'collect', 'courier'] as const).map((m) => (
+        {(['meet', 'collect', 'courier'] as const).filter((m) => m !== 'collect' || h.itemLocation.current !== 'with_me').map((m) => (
           <label key={m} className="choice">
             <input type="radio" name="method" checked={h.method === m} onChange={() => onSave({ method: m })} disabled={busy} />
             <span>
@@ -226,7 +226,7 @@ function PlanSection({ h, busy, onSave }: { h: H; busy: boolean; onSave: (b: Rec
 
       <div className="field">
         <label htmlFor="when">{t('handover.when')}</label>
-        <div className="row" style={{ flexWrap: 'nowrap' }}>
+        <div className="inline-field">
           <input id="when" className="input" type="datetime-local" min={toLocalInput(new Date())} value={when} onChange={(e) => setWhen(e.target.value)} />
           <Button variant="ghost" disabled={!when || busy} onClick={() => onSave({ scheduledFor: new Date(when).toISOString() })}>{t('app.save')}</Button>
         </div>

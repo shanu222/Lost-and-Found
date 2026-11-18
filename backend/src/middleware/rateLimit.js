@@ -11,5 +11,7 @@ const make = (windowMs, limit) =>
 
 export const apiLimiter = make(15 * 60 * 1000, 600);
 export const authLimiter = make(15 * 60 * 1000, 30);
+// Session refresh happens on every page load / tab, so it gets its own, higher budget.
+export const refreshLimiter = make(15 * 60 * 1000, 300);
 export const otpLimiter = make(60 * 60 * 1000, 10);
 export const geocodeLimiter = make(60 * 1000, 30);

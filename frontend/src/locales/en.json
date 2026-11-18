@@ -11,12 +11,19 @@
     "saved": "Saved",
     "cancel": "Cancel",
     "close": "Close",
-    "disclaimer": "FoundBack connects people. Meet only in safe public places."
+    "disclaimer": "FoundBack connects people. Meet only in safe public places.",
+    "optional": "optional"
   },
   "nav": {
     "home": "Home",
     "settings": "Settings",
-    "mainNavigation": "Main navigation"
+    "mainNavigation": "Main navigation",
+    "browse": "Browse",
+    "my": "My items",
+    "messages": "Messages",
+    "admin": "Admin",
+    "notificationsCount_one": "Notifications ({{count}} unread)",
+    "notificationsCount_other": "Notifications ({{count}} unread)"
   },
   "header": {
     "countryButton": "{{country}}: what you see",
@@ -131,7 +138,17 @@
     "trustTitle": "Your trust level",
     "returnsCount_one": "{{count}} item returned",
     "returnsCount_other": "{{count}} items returned",
-    "points": "{{count}} points"
+    "points": "{{count}} points",
+    "foundButton": "I found something",
+    "foundHint": "Post it and help the owner get it back",
+    "lostButton": "I lost something",
+    "lostHint": "Report it and get notified of matches",
+    "nearTitle": "Found near you",
+    "seeAll": "See all",
+    "nearEmpty": "Nothing found near you yet. Report what you lost to be alerted when it turns up.",
+    "storiesTitle": "Returned to their owners",
+    "storyMeta_one": "{{category}} in {{city}} · back in {{count}} day",
+    "storyMeta_other": "{{category}} in {{city}} · back in {{count}} days"
   },
   "trust": {
     "new": "New member",
@@ -178,7 +195,16 @@
     "deleteBody": "Your profile, phone number and open posts are removed. This can't be undone. Type DELETE to confirm.",
     "deleteConfirmLabel": "Type DELETE",
     "deleteConfirm": "Delete my account",
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "pushDevice": "Push notifications on this device",
+    "push": {
+      "unsupported": "Not supported on this browser",
+      "denied": "Blocked in your browser settings",
+      "on": "On",
+      "off": "Off"
+    },
+    "pushOn": "Turn on",
+    "pushOff": "Turn off"
   },
   "units": {
     "km": "{{value}} km",
@@ -211,6 +237,731 @@
     "ONBOARDING_INCOMPLETE": "A few profile steps are still missing.",
     "ACCOUNT_BANNED": "This account has been suspended.",
     "ACCOUNT_DELETED": "This account was deleted.",
-    "GOOGLE_DISABLED": "Google sign-in is not set up yet."
+    "GOOGLE_DISABLED": "Google sign-in is not set up yet.",
+    "NOT_FOUND": "We couldn't find that. It may have been removed, or it's in another country.",
+    "FORBIDDEN": "You're not allowed to do that.",
+    "INTERNAL": "Something went wrong. Please try again.",
+    "BAD_JSON": "Something went wrong sending that. Please try again.",
+    "PAYLOAD_TOO_LARGE": "That's too large to send.",
+    "ONBOARDING_REQUIRED": "Please finish setting up your profile first.",
+    "ONBOARDING_DONE": "Use Settings to change your country.",
+    "CONTACT_DETAILS_BLOCKED": "Public text can't contain phone numbers, emails, links or ID numbers. Remove them to continue.",
+    "PHOTOS_REQUIRED": "Add between 1 and 5 photos.",
+    "DATE_IN_FUTURE": "The date can't be in the future.",
+    "IDENTIFIER_REQUIRED": "Enter the ID number privately so we can verify the owner.",
+    "IMAGE_INVALID": "That file isn't a supported image.",
+    "IMAGE_TOO_LARGE": "Each image must be under 10 MB.",
+    "UPLOAD_INVALID": "The upload was rejected. Try fewer or smaller photos.",
+    "CANNOT_CLAIM": "You can't claim this item.",
+    "CLAIM_REJECTED_BEFORE": "Your earlier claim for this item was declined, so you can't claim it again.",
+    "CLAIM_EXISTS": "You already have a claim for this item.",
+    "ANSWERS_REQUIRED": "Please answer every question.",
+    "PROOF_REQUIRED": "Some required proof is missing.",
+    "CLAIM_CLOSED": "This claim is no longer open.",
+    "ITEM_LOCKED": "This item is already being returned.",
+    "CLAIM_NOT_APPROVED": "The claim hasn't been approved yet.",
+    "HANDOVER_NOT_AGREED": "You both need to agree to the handover first.",
+    "HANDOVER_DONE": "This item has already been returned.",
+    "HANDOVER_CODE_INVALID": "That code isn't correct. Check it with the owner.",
+    "FINDER_ONLY": "Only the finder enters the handover code.",
+    "HANDOVER_NOT_DONE": "You can rate after the item is returned.",
+    "ALREADY_RATED": "You've already rated this handover.",
+    "CONVERSATION_CLOSED": "This conversation is closed.",
+    "TRAVEL_INACTIVE": "Turn on travel mode in Settings first.",
+    "TRAVEL_ACTIVE": "Travel mode works for one country at a time. Turn it off first.",
+    "TRAVEL_SAME_COUNTRY": "Travel mode is for another country.",
+    "ALERT_LIMIT": "You can have up to 10 active alerts.",
+    "ALREADY_REPORTED": "You've already reported this.",
+    "IDENTITY_EXISTS": "Your identity check is already submitted.",
+    "TRANSLATION_DISABLED": "Translation isn't available.",
+    "TRANSLATION_FAILED": "Translation failed. Please try again.",
+    "PLACES_UNAVAILABLE": "Safe place suggestions are unavailable right now. Agree on a public place in the chat.",
+    "COUNTRY_NOT_ASSIGNED": "You don't moderate this country.",
+    "NO_COUNTRIES": "No countries are assigned to you yet.",
+    "CANNOT_BAN_ADMIN": "Admins can't be banned.",
+    "PATTERN_INVALID": "The ID-number pattern isn't a valid regular expression.",
+    "LANGUAGE_INVALID": "Unknown language code.",
+    "TIMEZONE_INVALID": "That time zone isn't in this country.",
+    "ALREADY_REVIEWED": "This has already been reviewed.",
+    "ALREADY_ADMIN": "This user is an admin."
+  },
+  "status": {
+    "waiting": "Waiting for owner",
+    "under_review": "Claim under review",
+    "returned": "Returned",
+    "closed": "Closed",
+    "removed": "Removed",
+    "open": "Open",
+    "found": "Found",
+    "expired": "Expired"
+  },
+  "claimStatus": {
+    "pending": "Waiting for the finder",
+    "follow_up": "Question for you",
+    "approved": "Approved",
+    "rejected": "Not approved",
+    "expired": "Expired",
+    "withdrawn": "Withdrawn"
+  },
+  "categories": {
+    "phone": "Phone",
+    "wallet": "Wallet / purse",
+    "national_id": "ID card / passport",
+    "bank_cards": "Bank cards",
+    "documents": "Documents",
+    "keys": "Keys",
+    "bag": "Bag",
+    "jewellery": "Jewellery",
+    "watch": "Watch",
+    "laptop": "Laptop / tablet",
+    "vehicle_documents": "Vehicle documents",
+    "pets": "Pet",
+    "childrens_items": "Children's item",
+    "cash": "Cash",
+    "other": "Other"
+  },
+  "questions": {
+    "phone": [
+      "What is the phone wallpaper?",
+      "What colour is the case?",
+      "Which brand and model is it?",
+      "Is there any crack or sticker?"
+    ],
+    "wallet": [
+      "What is inside the wallet?",
+      "Exact cash amount?",
+      "Which cards are inside?",
+      "What colour is it inside?"
+    ],
+    "national_id": [
+      "Name on the card?",
+      "Father's or spouse's name on the card?",
+      "Date of birth on the card?"
+    ],
+    "bank_cards": [
+      "Name on the card?",
+      "Which bank issued it?",
+      "What colour is the card?"
+    ],
+    "documents": [
+      "What kind of documents are they?",
+      "Whose name is on them?",
+      "What are they kept in?"
+    ],
+    "keys": [
+      "How many keys are there?",
+      "What is on the keychain?",
+      "Which car or lock are they for?"
+    ],
+    "bag": [
+      "What is inside the bag?",
+      "What brand is it?",
+      "Any badge, tag or damage?"
+    ],
+    "jewellery": [
+      "Describe the design",
+      "Any engraving?",
+      "What metal or stone is it?"
+    ],
+    "watch": [
+      "Which brand is it?",
+      "Any engraving on the back?",
+      "What colour is the strap?"
+    ],
+    "laptop": [
+      "What is the login name?",
+      "Any stickers on it?",
+      "Which brand and model?"
+    ],
+    "vehicle_documents": [
+      "Registration number on the papers?",
+      "Owner's name?",
+      "Which vehicle are they for?"
+    ],
+    "pets": [
+      "What is the pet's name?",
+      "What breed is it?",
+      "Any marks or collar details?"
+    ],
+    "childrens_items": [
+      "Describe the item",
+      "Any name tag on it?",
+      "What colour is it?"
+    ],
+    "cash": [
+      "Exact amount?",
+      "Which notes?",
+      "What was it kept in?"
+    ],
+    "other": [
+      "Describe the item in detail",
+      "Any marks or damage?",
+      "Where did you lose it?"
+    ]
+  },
+  "browse": {
+    "title": "Found items in {{country}}",
+    "view": "View",
+    "list": "List",
+    "map": "Map",
+    "search": "Search found items",
+    "category": "Category",
+    "allCategories": "All categories",
+    "radius": "Distance",
+    "anyDistance": "Any distance",
+    "within": "Within {{distance}}",
+    "date": "Date found",
+    "anyTime": "Any time",
+    "lastDay": "Last 24 hours",
+    "lastWeek": "Last 7 days",
+    "lastMonth": "Last 30 days",
+    "status": "Status",
+    "open": "Waiting for owners",
+    "returned": "Returned",
+    "sort": "Sort",
+    "newest": "Newest first",
+    "nearest": "Nearest first",
+    "nearMe": "Near me",
+    "empty": "No found items match these filters.",
+    "mapNote": "Circles show an approximate area (about 500 m), never the exact spot.",
+    "more": "Load more"
+  },
+  "item": {
+    "photos": "Photos",
+    "photoAlt": "{{category}}, photo {{n}}",
+    "illustrationNote": "For privacy, photos of IDs, cards, documents and cash are never shown publicly.",
+    "facesBlurred": "Only you can see these exact photos. Faces are blurred in public photos.",
+    "foundOn": "Found on",
+    "area": "Area",
+    "areaApprox": "Approximate area",
+    "whereNow": "Where it is now",
+    "location": {
+      "with_me": "With the finder",
+      "police": "Handed to a police station",
+      "shop_office": "Left at a shop or office"
+    },
+    "reward": "Reward",
+    "noReward": "The finder doesn't want a reward",
+    "finder": "Found by",
+    "finderLine_one": "{{name}} · {{count}} item returned",
+    "finderLine_other": "{{name}} · {{count}} items returned",
+    "someone": "A FoundBack member",
+    "claim": "This is mine — claim it",
+    "viewMyClaim": "View my claim ({{status}})",
+    "reviewClaims_one": "Review claims ({{count}} waiting)",
+    "reviewClaims_other": "Review claims ({{count}} waiting)",
+    "closePost": "Close this post",
+    "closeTitle": "Close this post?",
+    "closeBody": "Close it if the item went back to its owner some other way, or you handed it to the authorities. Open claims will be declined.",
+    "mapTitle": "Where it was found",
+    "mapNote": "This is an approximate area. The exact spot is never shown."
+  },
+  "photos": {
+    "add": "Add photo",
+    "hint": "Up to {{max}} photos. Location data is removed automatically.",
+    "preview": "Photo {{n}}",
+    "remove": "Remove photo {{n}}"
+  },
+  "foundWizard": {
+    "title": "I found something",
+    "steps": {
+      "category": "Type",
+      "photos": "Photos",
+      "describe": "Describe",
+      "questions": "Questions",
+      "where": "Where",
+      "details": "Details",
+      "review": "Post"
+    },
+    "categoryTitle": "What did you find?",
+    "photosTitle": "Add photos",
+    "photosPublic": "Clear photos help the owner recognise it. Faces are blurred and location data is removed.",
+    "photosPrivate": "Photos of IDs, cards, documents and cash stay private: only you and moderators see them. Others see an illustration.",
+    "describeTitle": "Describe it briefly",
+    "describeBody": "Keep it short and leave out anything that would let a stranger claim it, like names, numbers or exact contents.",
+    "descriptionLabel": "Short public description",
+    "descriptionPlaceholder": "e.g. Black leather wallet",
+    "descriptionHint": "No phone numbers, emails, links or ID numbers.",
+    "areaLabel": "Area name (optional)",
+    "areaPlaceholder": "e.g. Near the main market",
+    "questionsTitle": "Hidden questions only the owner can answer",
+    "questionsBody": "Add 2 to 4 questions with the answers. They are encrypted and never shown publicly; you'll compare a claimant's answers with yours.",
+    "suggestions": "Suggested questions",
+    "question": "Question {{n}}",
+    "answer": "Answer (private)",
+    "addQuestion": "Add another question",
+    "removeQuestion": "Remove this question",
+    "identifierId": "{{name}} number (private)",
+    "identifierSerial": "Serial number, IMEI or card number (private)",
+    "identifierHint": "Never shown to anyone. FoundBack compares it with the number the owner enters.",
+    "encryptedNote": "Answers and numbers are encrypted.",
+    "whereTitle": "Where did you find it?",
+    "whereBody": "Tap the map to drop a pin. It must be inside {{country}}.",
+    "wherePrivacy": "Others only see an approximate area of about 500 m around this point.",
+    "detailsTitle": "A few details",
+    "when": "When did you find it?",
+    "whereNow": "Where is the item now?",
+    "whereNote": "Name of the police station, shop or office",
+    "noReward": "I don't need a reward",
+    "reviewTitle": "Check and post",
+    "photoCount_one": "{{count}} photo",
+    "photoCount_other": "{{count}} photos",
+    "questionCount_one": "{{count}} question",
+    "questionCount_other": "{{count}} questions",
+    "accept": "I have read the guidance above and my post has no personal details.",
+    "post": "Post found item",
+    "posting": "Posting…"
+  },
+  "lostWizard": {
+    "title": "I lost something",
+    "steps": {
+      "category": "Type",
+      "describe": "Describe",
+      "where": "Where",
+      "when": "When",
+      "photos": "Photos"
+    },
+    "categoryTitle": "What did you lose?",
+    "travelToggle": "I lost it while travelling in {{country}}",
+    "describeTitle": "Describe it",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "e.g. Grey backpack with a NASA patch",
+    "descriptionHint": "Colour, brand, size and anything distinctive. No phone numbers or emails.",
+    "identifier": "IMEI, serial or ID number",
+    "identifierHint": "Kept private and encrypted. Used to spot an exact match.",
+    "privateDetails": "Private details",
+    "privateHint": "Only you can see these, e.g. receipt details. They help you prove ownership later.",
+    "reward": "Reward ({{currency}})",
+    "whereTitle": "Where did you lose it?",
+    "whereBody": "Tap the map inside {{country}}, then set how far it could be.",
+    "radius": "Search area: {{distance}}",
+    "whenTitle": "When did you lose it?",
+    "whenBody": "Give the time window when it went missing.",
+    "from": "From",
+    "to": "To",
+    "photosTitle": "Photos (optional)",
+    "photosBody": "Photos of the item, the box or a receipt. They stay private.",
+    "submit": "Report lost item"
+  },
+  "my": {
+    "title": "My items",
+    "found": "Found by me",
+    "lost": "Lost by me",
+    "claims": "My claims",
+    "foundEmpty": "You haven't posted any found items.",
+    "lostEmpty": "You haven't reported anything lost.",
+    "claimsEmpty": "You haven't claimed any items.",
+    "claimsToReview_one": "{{count}} claim to review",
+    "claimsToReview_other": "{{count}} claims to review",
+    "possibleOwners_one": "{{count}} possible owner",
+    "possibleOwners_other": "{{count}} possible owners",
+    "reviewClaims": "Review claims",
+    "handover": "Handover",
+    "lostCreated_one": "Reported. We found {{count}} possible match.",
+    "lostCreated_other": "Reported. We found {{count}} possible matches.",
+    "traveller": "Traveller · {{country}}",
+    "matches": "Possible matches",
+    "noMatches": "No matches yet. We'll notify you when something similar is found.",
+    "matchScore": "{{score}}% match",
+    "viewMatch": "View",
+    "notMine": "Not mine",
+    "markFound": "I got it back",
+    "closeReport": "Close report",
+    "openClaim": "Open"
+  },
+  "alerts": {
+    "title": "Saved alerts",
+    "body": "Get notified when a matching item is found near a place.",
+    "create": "Notify me if it's found nearby",
+    "keywords": "Keywords",
+    "keywordsHint": "All words must appear in the found item's description, e.g. \"black\".",
+    "radius": "Within {{distance}}",
+    "duration": "For how long",
+    "days_one": "{{count}} day",
+    "days_other": "{{count}} days",
+    "save": "Save alert",
+    "delete": "Delete",
+    "empty": "No saved alerts.",
+    "anything": "anything",
+    "line": "{{what}} within {{distance}} {{place}}, until {{date}}"
+  },
+  "claim": {
+    "title": "Claim this item",
+    "questionsTitle": "Answer the finder's questions",
+    "questionsBody": "Only the finder sees your answers.",
+    "proofTitle": "Prove it's yours",
+    "proofHelp": {
+      "id": "Enter the {{idName}} number (we compare it automatically and never show it) and add a selfie holding another ID.",
+      "device": "Enter the IMEI or serial number, or add a photo of the box or receipt.",
+      "contents": "Describe exactly what was inside.",
+      "other": "Describe the item in detail or add photos that show it's yours."
+    },
+    "idNumber": "{{idName}} number",
+    "cardNumber": "Card number",
+    "serial": "IMEI or serial number",
+    "identifierHint": "Compared by FoundBack automatically. Never shown to the finder.",
+    "contents": "Exact contents or description",
+    "selfie": "Selfie holding another ID (not the {{idName}} you lost)",
+    "selfieAdd": "Take selfie",
+    "images": "Photos (box, receipt, earlier photos)",
+    "text": "Anything else that proves it's yours",
+    "privacy": "Your contact details stay hidden. You'll chat in FoundBack until the finder approves and you both agree to meet.",
+    "submit": "Send claim"
+  },
+  "review": {
+    "title": "Review claims",
+    "empty": "No claims yet.",
+    "claimN": "Claim {{n}} · {{name}}",
+    "memberSince": "Member since {{date}}",
+    "flagged": "FoundBack flagged this claim as possibly suspicious. Check the proof carefully.",
+    "identifierMatch": "The number they entered matches the one you saved.",
+    "identifierMismatch": "The number they entered does NOT match the one you saved.",
+    "compare": "Answers compared",
+    "question": "Question",
+    "yourAnswer": "Your answer",
+    "theirAnswer": "Their answer",
+    "followUp": "Follow-up question",
+    "waitingAnswer": "Waiting for their answer",
+    "proof": "Proof",
+    "proofKind": {
+      "photo": "Photo",
+      "selfie": "Selfie",
+      "contents": "Contents",
+      "text": "Notes",
+      "id_number": "ID number",
+      "serial": "Serial",
+      "receipt": "Receipt"
+    },
+    "idProvided": "They entered an ID number. It's compared automatically and never shown.",
+    "approve": "Approve",
+    "ask": "Ask a question",
+    "reject": "Reject",
+    "approveTitle": "Approve this claim?",
+    "askTitle": "Ask a follow-up question",
+    "rejectTitle": "Reject this claim",
+    "approveBody": "Only one claim can be approved; any others will be declined. Next you'll both agree on a safe handover.",
+    "reason": "Reason",
+    "reasons": {
+      "answers_wrong": "The answers don't match",
+      "proof_insufficient": "Not enough proof",
+      "suspicious": "Looks suspicious",
+      "other": "Other reason",
+      "another_claim_approved": "Another claim was approved",
+      "post_closed": "The finder closed the post",
+      "post_removed": "The post was removed",
+      "moderator": "Declined by a moderator"
+    },
+    "note": "Note (optional)",
+    "followUpQuestion": "Your question",
+    "openChat": "Open claim and chat"
+  },
+  "claimDetail": {
+    "titleMine": "My claim",
+    "titleFinder": "Claim on your item",
+    "status": "Status",
+    "pendingNote": "The finder has until {{date}} to respond.",
+    "followUp": "The finder asked:",
+    "yourAnswer": "Your answer",
+    "sendAnswer": "Send answer",
+    "chat": "Message",
+    "withdraw": "Withdraw claim",
+    "rejected": "The finder couldn't confirm this claim."
+  },
+  "timeline": {
+    "submitted": "Claim sent",
+    "follow_up": "Finder asked a question",
+    "approved": "Claim approved",
+    "handover_agreed": "Handover agreed",
+    "returned": "Returned",
+    "rejected": "Not approved",
+    "expired": "Expired",
+    "withdrawn": "Withdrawn"
+  },
+  "messages": {
+    "title": "Messages",
+    "masked": "Phone numbers, emails and links are hidden automatically.",
+    "empty": "No conversations yet. They start when someone claims an item.",
+    "withClaimant": "With claimant {{name}}",
+    "withFinder": "With finder {{name}}",
+    "claim": "Claim",
+    "safety": "Never send money in advance. Meet only in a safe public place.",
+    "start": "Say hello. Contact details are hidden until you both agree.",
+    "wasMasked": "contact details hidden",
+    "placeholder": "Write a message",
+    "send": "Send",
+    "closed": "This conversation is closed."
+  },
+  "handover": {
+    "title": "Handover: {{category}}",
+    "agreeTitle": "Agree to the handover",
+    "agreeBodyFinder": "You approved this claim. Confirm you're ready to hand the item over.",
+    "agreeBodyOwner": "Your claim was approved. Confirm you're ready to collect the item.",
+    "finderAgreed": "Finder agreed",
+    "ownerAgreed": "Owner agreed",
+    "agree": "Agree to handover",
+    "waitingOther": "Waiting for the other person to agree.",
+    "yourCode": "Your handover code",
+    "codeBody": "Show this code or QR to the finder when you receive the item.",
+    "codeWarning": "Only share it in person, once you have the item in your hands.",
+    "qrAlt": "QR code for the handover",
+    "enterCode": "Enter the owner's code",
+    "enterBody": "Ask the owner for their 6-digit code when you hand the item over, or scan their QR.",
+    "codeLabel": "6-digit handover code",
+    "scan": "Scan QR",
+    "stopScan": "Stop scanning",
+    "scanUnsupported": "QR scanning isn't supported on this browser. Type the code instead.",
+    "cameraDenied": "We couldn't open the camera. Type the code instead.",
+    "markReturned": "Mark as returned",
+    "planTitle": "Plan the handover",
+    "method": "How will it be handed over?",
+    "methods": {
+      "meet": "Meet in a safe public place",
+      "collect": "Collect from where the finder left it",
+      "courier": "Courier (owner pays)"
+    },
+    "methodHelp": {
+      "meet": "Pick a police station, bank, mall or station near you both.",
+      "collect": "The item is: {{where}}.",
+      "courier": "Arrange the courier in the chat. The owner pays."
+    },
+    "safePlaces": "Suggested safe places",
+    "noPlaces": "No safe places found nearby. Agree on one in the chat.",
+    "placeTypes": {
+      "police": "Police station",
+      "bank": "Bank",
+      "mall": "Shopping mall",
+      "station": "Transit station"
+    },
+    "when": "Date and time",
+    "scheduled": "Planned for {{date}}",
+    "sharePhone": "Share my phone number",
+    "otherShares": "The other person agreed to share theirs.",
+    "otherNotShares": "Numbers are shown only if you both agree.",
+    "otherPhone": "Their number:",
+    "courierNote": "Never pay for an item. FoundBack never asks for money.",
+    "returned": "Returned to its owner",
+    "thanksRated": "Thank you for your rating!",
+    "rateFinder": "Rate the finder",
+    "rateOwner": "Rate the owner",
+    "stars": "Rating",
+    "starN_one": "{{count}} star",
+    "starN_other": "{{count}} stars",
+    "note": "Thank-you note (optional)",
+    "reward": "Reward given ({{currency}})",
+    "rewardHint": "Only for your records. FoundBack doesn't handle payments.",
+    "shareStory": "Share my note as a success story in my country (no names or contact details)",
+    "sendRating": "Send rating"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "No notifications yet.",
+    "match_for_owner": {
+      "title": "Possible match found",
+      "body": "A found {{category}} may be yours ({{score}}% match)."
+    },
+    "match_for_finder": {
+      "title": "Someone may have lost this",
+      "body": "A lost report matches the {{category}} you found ({{score}}% match)."
+    },
+    "alert_match": {
+      "title": "Your alert: {{category}} found",
+      "body": "A {{category}} was found near the area you're watching."
+    },
+    "new_claim": {
+      "title": "New claim on your post",
+      "body": "Someone says the {{category}} you found is theirs. Review their proof."
+    },
+    "claim_approved": {
+      "title": "Your claim was approved",
+      "body": "Agree on a safe handover for the {{category}}."
+    },
+    "claim_rejected": {
+      "title": "Your claim was not approved",
+      "body": "The finder couldn't confirm your claim for the {{category}}."
+    },
+    "claim_follow_up": {
+      "title": "The finder has a question",
+      "body": "Answer a follow-up question about the {{category}}."
+    },
+    "follow_up_answered": {
+      "title": "Follow-up answered",
+      "body": "The claimant answered your question about the {{category}}."
+    },
+    "claim_expired": {
+      "title": "Claim expired",
+      "body": "Your claim for the {{category}} expired without a response."
+    },
+    "new_message": {
+      "title": "New message",
+      "body": "You have a new message about the {{category}}."
+    },
+    "handover_ready": {
+      "title": "Handover agreed",
+      "body": "You both agreed. Choose how to hand over the {{category}}."
+    },
+    "handover_updated": {
+      "title": "Handover plan changed",
+      "body": "The handover plan for the {{category}} was updated."
+    },
+    "handover_reminder": {
+      "title": "Handover reminder",
+      "body": "Your handover for the {{category}} is coming up. Meet only in a safe public place."
+    },
+    "item_returned": {
+      "title": "Returned!",
+      "body": "The {{category}} is back with its owner. Please rate the handover."
+    },
+    "found_reminder": {
+      "title": "Still holding a found item?",
+      "body": "Your {{category}} post has been open for 90 days. Consider handing it to {{authority}}."
+    },
+    "identity_approved": {
+      "title": "Identity verified",
+      "body": "You now have the Identity verified badge."
+    },
+    "identity_rejected": {
+      "title": "Identity check not approved",
+      "body": "We couldn't verify your identity. You can try again."
+    }
+  },
+  "report": {
+    "button": "Report",
+    "title": "Report a problem",
+    "reason": "What's wrong?",
+    "reasons": {
+      "scam": "Scam",
+      "fake_claim": "Fake claim",
+      "abusive": "Abusive",
+      "wrong_category": "Wrong category",
+      "other": "Something else"
+    },
+    "details": "Details (optional)",
+    "submit": "Send report",
+    "thanks": "Thanks. A moderator for your country will review it."
+  },
+  "translate": {
+    "button": "Translate to {{language}}",
+    "hide": "Hide translation",
+    "working": "Translating…"
+  },
+  "travel": {
+    "title": "Travel mode",
+    "body": "Lost something abroad? For 30 days you can report lost items in one other country. Those reports only match items there and are marked \"Traveller\".",
+    "turnOn": "Turn on travel mode",
+    "turnOff": "Turn off",
+    "pick": "Which country are you visiting?",
+    "confirm": "Turn on for 30 days",
+    "active": "On for {{country}} until {{date}}."
+  },
+  "identity": {
+    "title": "Identity verification (optional)",
+    "body": "Get the Identity verified badge: enter your {{idName}} number and take a selfie holding it. An admin reviews it; the number is encrypted and never shown.",
+    "start": "Verify my identity",
+    "number": "{{idName}} number",
+    "selfie": "Selfie holding your {{idName}}",
+    "privacy": "Stored encrypted and only used for this check.",
+    "submit": "Send for review",
+    "pending": "Your identity check is waiting for review.",
+    "approved": "Your identity is verified.",
+    "rejected": "Your identity check was not approved."
+  },
+  "admin": {
+    "title": "Admin",
+    "countryFilter": "Country",
+    "allCountries": "All countries",
+    "myCountries": "My countries",
+    "moderatorScope": "You moderate: {{list}}",
+    "tabs": {
+      "dashboard": "Dashboard",
+      "reports": "Reports",
+      "disputes": "Disputes",
+      "identity": "Identity",
+      "photos": "Photos",
+      "users": "Users",
+      "countries": "Countries",
+      "moderators": "Moderators",
+      "translations": "Translations",
+      "audit": "Audit log"
+    },
+    "kpi": {
+      "found": "Items found",
+      "returned": "Returned",
+      "returnRate": "Return rate",
+      "open_claims": "Open claims",
+      "flagged_claims": "Flagged claims",
+      "open_reports": "Open reports",
+      "pending_identity": "Identity checks",
+      "users": "Users"
+    },
+    "country": "Country",
+    "avgDays": "Avg. days to return",
+    "open": "Open",
+    "queueEmpty": "Nothing waiting here.",
+    "targets": {
+      "found_item": "Found item",
+      "lost_report": "Lost report",
+      "claim": "Claim",
+      "message": "Message",
+      "user": "User"
+    },
+    "openItem": "Open item",
+    "dismiss": "Dismiss",
+    "removeContent": "Remove content",
+    "banUser": "Ban user",
+    "flags": {
+      "identifier_mismatch": "ID number mismatch",
+      "new_account": "New account",
+      "repeated_rejections": "Repeated rejections",
+      "many_claims": "Many claims"
+    },
+    "reportsCount_one": "{{count}} report",
+    "reportsCount_other": "{{count}} reports",
+    "claimHistory": "Claim history",
+    "clearFlag": "Looks fine",
+    "rejectClaim": "Reject claim",
+    "identityNote": "Compare the face with the ID in the selfie. The ID number itself is never shown.",
+    "selfieAlt": "Selfie of {{name}}",
+    "approve": "Approve",
+    "reject": "Reject",
+    "searchUsers": "Search by name or user ID",
+    "search": "Search",
+    "name": "Name",
+    "statusCol": "Status",
+    "trust": "Trust",
+    "rejected": "Rejected",
+    "details": "Details",
+    "userTitle": "User",
+    "noClaims": "No claims.",
+    "unban": "Unban",
+    "banReason": "Reason for the ban",
+    "enabled": "Enabled",
+    "emergency": "Emergency number",
+    "idName": "National ID name",
+    "edit": "Edit",
+    "authority": "Police / authority name",
+    "idPattern": "ID-number pattern (regular expression)",
+    "languages": "Suggested languages (besides English)",
+    "languagesHint": "Comma-separated codes, e.g. ur, ar",
+    "safePlaceTypes": "Safe handover place types",
+    "guidanceLanguage": "Guidance language",
+    "guidance": {
+      "ids": "Guidance for found IDs",
+      "documents": "Guidance for documents",
+      "cash": "Guidance for cash",
+      "general": "General guidance"
+    },
+    "moderatorsHelp": "Paste the user ID (from the Users tab) and the countries they will moderate.",
+    "userId": "User ID",
+    "countriesList": "Country codes",
+    "assign": "Assign",
+    "remove": "Remove",
+    "noModerators": "No moderators yet.",
+    "translationsHelp": "Share of interface text translated in each language. Missing text shows in English.",
+    "coverage": "Coverage",
+    "auditFilter": "Filter by action, e.g. claim.",
+    "when": "When",
+    "actor": "Who",
+    "action": "Action",
+    "target": "Target"
   }
 }

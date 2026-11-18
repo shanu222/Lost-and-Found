@@ -29,6 +29,12 @@ function flatten(obj, prefix = '', out = {}) {
 function fill(source, target) {
   const out = {};
   for (const [k, v] of Object.entries(source)) {
+    // Lists (e.g. suggested questions) are kept only once translated; until
+    // then the app falls back to the English list.
+    if (Array.isArray(v)) {
+      if (Array.isArray(target?.[k]) && target[k].length) out[k] = target[k];
+      continue;
+    }
     if (v && typeof v === 'object') out[k] = fill(v, target?.[k] ?? {});
     else out[k] = typeof target?.[k] === 'string' ? target[k] : '';
   }

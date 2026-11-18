@@ -52,9 +52,9 @@ describe('i18n', () => {
   });
 
   it('ships every English string in Urdu and Arabic', () => {
-    const want = bases(en as Tree);
+    const want = bases(en as unknown as Tree);
     for (const [name, file] of [['ur', ur], ['ar', ar]] as const) {
-      const flat = keys(file as Tree);
+      const flat = keys(file as unknown as Tree);
       const have = new Set(flat.filter((k) => {
         const v = k.split('.').reduce<unknown>((o, p) => (o as Tree)[p], file);
         return typeof v === 'string' && v.trim();
