@@ -97,3 +97,40 @@ export function LogoMark({ size = 28 }: { size?: number }) {
     </svg>
   );
 }
+
+export const BellIcon = (p: P) => (
+  <Svg {...p}>
+    <path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0" />
+  </Svg>
+);
+export const ChatIcon = (p: P) => (
+  <Svg {...p}>
+    <path d="M4 5h16v11H9l-5 4z" />
+  </Svg>
+);
+export const TagIcon = (p: P) => (
+  <Svg {...p}>
+    <path d="M10 4h9a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-9l-6-8z" />
+    <circle cx="10" cy="12" r="1.6" />
+  </Svg>
+);
+export const PlusIcon = (p: P) => (
+  <Svg {...p}>
+    <path d="M12 5v14M5 12h14" />
+  </Svg>
+);
+export const MapIcon = (p: P) => (
+  <Svg {...p}>
+    <path d="M9 4 3.5 6v14L9 18l6 2 5.5-2V4L15 6zM9 4v14M15 6v14" />
+  </Svg>
+);
+export const ListIcon = (p: P) => (
+  <Svg {...p}>
+    <path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01" />
+  </Svg>
+);
+export const QrIcon = (p: P) => (
+  <Svg {...p}>
+    <path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2M14 18h2v2M18 18h2v2" />
+  </Svg>
+);

@@ -1,4 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { PhotoPicker } from '../components/PhotoPicker';
+import { disablePush, enablePush, pushStatus } from '../lib/push';
+import { formData } from '../lib/api';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/AuthProvider';
 import { CountryList } from '../components/CountryList';
@@ -146,7 +150,11 @@ export default function Settings() {
               </span>
             </label>
           ))}
+        <PushRow />
         </section>
+
+        <TravelSection />
+        <IdentitySection />
 
         <section className="settings-section" aria-labelledby="s-privacy">
           <h2 id="s-privacy">{t('settings.privacy')}</h2>
@@ -161,6 +169,11 @@ export default function Settings() {
           </div>
         </section>
 
+        {(user.role === 'admin' || user.role === 'moderator') && (
+          <section className="settings-section">
+            <Link className="btn btn--ghost btn--block" to="/admin">{t('nav.admin')}</Link>
+          </section>
+        )}
         <section className="settings-section">
           <Button variant="ghost" block onClick={() => void signOut()}>
             {t('settings.signOut')}
@@ -264,5 +277,161 @@ function DeleteAccountDialog({ open, onClose }: { open: boolean; onClose: () => 
         </Button>
       </div>
     </Dialog>
+  );
+}
+
+function PushRow() {
+  const { t } = useTranslation();
+  const [state, setState] = useState<'unsupported' | 'denied' | 'on' | 'off' | null>(null);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    void pushStatus().then(setState);
+  }, []);
+  if (!state || state === 'unsupported') return null;
+  return (
+    <div className="settings-row">
+      <span>
+        <span className="settings-row__label">{t('settings.pushDevice')}</span>
+        <br />
+        <span className="settings-row__value">{t(`settings.push.${state}`)}</span>
+      </span>
+      {state !== 'denied' && (
+        <Button
+          variant="ghost"
+          loading={busy}
+          onClick={async () => {
+            setBusy(true);
+            try {
+              if (state === 'on') await disablePush();
+              else await enablePush();
+              setState(await pushStatus());
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          {state === 'on' ? t('settings.pushOff') : t('settings.pushOn')}
+        </Button>
+      )}
+    </div>
+  );
+}
+
+function TravelSection() {
+  const { t } = useTranslation();
+  const { user, setUser } = useAuth();
+  const { countries } = useCountries();
+  const errorMessage = useErrorMessage();
+  const [open, setOpen] = useState(false);
+  const [selected, setSelected] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  if (!user) return null;
+  const refresh = async () => setUser((await api<{ user: Me }>('/me')).user);
+  const turnOn = async () => {
+    if (!selected) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await api('/me/travel', { method: 'POST', body: { countryCode: selected } });
+      await refresh();
+      setOpen(false);
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const turnOff = async () => {
+    setBusy(true);
+    try {
+      await api('/me/travel', { method: 'DELETE' });
+      await refresh();
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <section className="settings-section" aria-labelledby="s-travel">
+      <h2 id="s-travel">{t('travel.title')}</h2>
+      <p className="small muted">{t('travel.body')}</p>
+      {user.travel ? (
+        <div className="settings-row">
+          <span>{t('travel.active', { country: countryName(user.travel.countryCode), date: formatDate(user.travel.until, user.countryCode) })}</span>
+          <Button variant="ghost" loading={busy} onClick={turnOff}>{t('travel.turnOff')}</Button>
+        </div>
+      ) : (
+        <Button variant="ghost" onClick={() => setOpen(true)}>{t('travel.turnOn')}</Button>
+      )}
+      <Dialog open={open} onClose={() => setOpen(false)} title={t('travel.pick')} labelledBy="travel-title">
+        <div className="stack">
+          {countries ? <CountryList countries={countries.filter((c) => c.code !== user.countryCode)} value={selected} onSelect={setSelected} /> : <LoadingState />}
+          {error && <Alert>{error}</Alert>}
+          <Button block loading={busy} disabled={!selected} onClick={turnOn}>{t('travel.confirm')}</Button>
+        </div>
+      </Dialog>
+    </section>
+  );
+}
+
+function IdentitySection() {
+  const { t, i18n } = useTranslation();
+  const { user } = useAuth();
+  const errorMessage = useErrorMessage();
+  const [status, setStatus] = useState<{ status: string; note: string | null } | null | undefined>(undefined);
+  const [idName, setIdName] = useState('');
+  const [open, setOpen] = useState(false);
+  const [idNumber, setIdNumber] = useState('');
+  const [selfie, setSelfie] = useState<File[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    api<{ identity: { status: string; note: string | null } | null }>('/me/identity').then((r) => setStatus(r.identity)).catch(() => setStatus(null));
+    if (user?.countryCode) api<{ country: { nationalIdName: string } }>(`/meta/countries/${user.countryCode}?lang=${i18n.language}`).then((r) => setIdName(r.country.nationalIdName)).catch(() => {});
+  }, [user?.countryCode, i18n.language]);
+  const submit = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await api('/me/identity', { method: 'POST', body: formData({ idNumber: idNumber.trim() }, { selfie }) });
+      setStatus({ status: 'pending', note: null });
+      setOpen(false);
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+  if (status === undefined) return null;
+  return (
+    <section className="settings-section" aria-labelledby="s-identity">
+      <h2 id="s-identity">{t('identity.title')}</h2>
+      <p className="small muted">{t('identity.body', { idName })}</p>
+      {status?.status === 'approved' ? (
+        <Alert kind="success">{t('identity.approved')}</Alert>
+      ) : status?.status === 'pending' ? (
+        <Alert kind="info">{t('identity.pending')}</Alert>
+      ) : (
+        <>
+          {status?.status === 'rejected' && <Alert>{t('identity.rejected')}{status.note ? ` — ${status.note}` : ''}</Alert>}
+          <Button variant="ghost" onClick={() => setOpen(true)}>{t('identity.start')}</Button>
+        </>
+      )}
+      <Dialog open={open} onClose={() => setOpen(false)} title={t('identity.title')} labelledBy="identity-title">
+        <div className="stack">
+          <div className="field">
+            <label htmlFor="idn">{t('identity.number', { idName })}</label>
+            <input id="idn" className="input" dir="ltr" autoComplete="off" value={idNumber} onChange={(e) => setIdNumber(e.target.value)} maxLength={40} />
+          </div>
+          <div className="field">
+            <span className="field__label">{t('identity.selfie', { idName })}</span>
+            <PhotoPicker files={selfie} onChange={setSelfie} max={1} label={t('claim.selfieAdd')} capture="user" />
+          </div>
+          <p className="small muted">{t('identity.privacy')}</p>
+          {error && <Alert>{error}</Alert>}
+          <Button block loading={busy} disabled={idNumber.trim().length < 5 || selfie.length !== 1} onClick={submit}>{t('identity.submit')}</Button>
+        </div>
+      </Dialog>
+    </section>
   );
 }

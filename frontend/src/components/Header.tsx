@@ -5,12 +5,14 @@ import { useTranslation } from 'react-i18next';
 import { Link, NavLink } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { countryName } from '../lib/format';
-import { HomeIcon, LogoMark, SettingsIcon } from './Icons';
+import { BellIcon, ChatIcon, HomeIcon, LogoMark, SearchIcon, SettingsIcon, TagIcon } from './Icons';
+import { useUnread } from '../lib/useUnread';
 import { LanguageSwitcher } from './LanguageSwitcher';
 
 export function Header() {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const unread = useUnread(Boolean(user?.onboarding.completed));
   const [explain, setExplain] = useState(false);
   const popRef = useRef<HTMLDivElement>(null);
   const country = user?.country;
@@ -42,8 +44,21 @@ export function Header() {
             <NavLink to="/" end>
               {t('nav.home')}
             </NavLink>
+            <NavLink to="/browse">{t('nav.browse')}</NavLink>
+            <NavLink to="/my">{t('nav.my')}</NavLink>
+            <NavLink to="/messages">
+              {t('nav.messages')}
+              {unread.messages > 0 && <span className="dot-count">{unread.messages}</span>}
+            </NavLink>
             <NavLink to="/settings">{t('nav.settings')}</NavLink>
+            {(user.role === 'admin' || user.role === 'moderator') && <NavLink to="/admin">{t('nav.admin')}</NavLink>}
           </nav>
+        )}
+        {user?.onboarding.completed && (
+          <NavLink to="/notifications" className="icon-button header__bell" aria-label={t('nav.notificationsCount', { count: unread.notifications })}>
+            <BellIcon />
+            {unread.notifications > 0 && <span className="dot-count dot-count--float">{unread.notifications > 9 ? '9+' : unread.notifications}</span>}
+          </NavLink>
         )}
         {country && (
           <button
@@ -84,11 +99,28 @@ export function Header() {
 
 export function TabBar() {
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const unread = useUnread(Boolean(user?.onboarding.completed));
   return (
     <nav className="tabbar" aria-label={t('nav.mainNavigation')}>
       <NavLink to="/" end>
         <HomeIcon />
         {t('nav.home')}
+      </NavLink>
+      <NavLink to="/browse">
+        <SearchIcon />
+        {t('nav.browse')}
+      </NavLink>
+      <NavLink to="/my">
+        <TagIcon />
+        {t('nav.my')}
+      </NavLink>
+      <NavLink to="/messages">
+        <span className="tab-icon">
+          <ChatIcon />
+          {unread.messages > 0 && <span className="dot-count dot-count--float">{unread.messages > 9 ? '9+' : unread.messages}</span>}
+        </span>
+        {t('nav.messages')}
       </NavLink>
       <NavLink to="/settings">
         <SettingsIcon />
@@ -97,4 +129,3 @@ export function TabBar() {
     </nav>
   );
 }
-

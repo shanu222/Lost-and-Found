@@ -55,10 +55,10 @@ export async function api<T = unknown>(path: string, { method = 'GET', body, sig
       signal,
       credentials: 'include',
       headers: {
-        ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+        ...(body !== undefined && !(body instanceof FormData) ? { 'Content-Type': 'application/json' } : {}),
         ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       },
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      body: body === undefined ? undefined : body instanceof FormData ? body : JSON.stringify(body),
     });
   } catch (err) {
     if ((err as Error).name === 'AbortError') throw err;
@@ -77,6 +77,14 @@ export async function api<T = unknown>(path: string, { method = 'GET', body, sig
     throw new ApiError(res.status, e.code ?? 'INTERNAL', e.message ?? 'Request failed', e.details);
   }
   return data as T;
+}
+
+/** Build a multipart body: JSON `data` + files grouped by field name. */
+export function formData(data: unknown, files: Record<string, File[]> = {}): FormData {
+  const fd = new FormData();
+  fd.append('data', JSON.stringify(data));
+  for (const [field, list] of Object.entries(files)) for (const f of list) fd.append(field, f, f.name);
+  return fd;
 }
 
 /** Download a JSON endpoint as a file (used for "Download my data"). */

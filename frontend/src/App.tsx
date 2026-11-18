@@ -14,6 +14,36 @@ import SignIn from './pages/SignIn';
 const Onboarding = lazy(() => import('./pages/Onboarding'));
 const Settings = lazy(() => import('./pages/Settings'));
 const NotFound = lazy(() => import('./pages/NotFound'));
+const Browse = lazy(() => import('./pages/Browse'));
+const ItemPage = lazy(() => import('./pages/ItemPage'));
+const FoundWizard = lazy(() => import('./pages/FoundWizard'));
+const LostWizard = lazy(() => import('./pages/LostWizard'));
+const MyItems = lazy(() => import('./pages/MyItems'));
+const ClaimForm = lazy(() => import('./pages/Claims').then((m) => ({ default: m.ClaimForm })));
+const ClaimReview = lazy(() => import('./pages/Claims').then((m) => ({ default: m.ClaimReview })));
+const ClaimDetail = lazy(() => import('./pages/Claims').then((m) => ({ default: m.ClaimDetail })));
+const MessagesList = lazy(() => import('./pages/Messages').then((m) => ({ default: m.MessagesList })));
+const Chat = lazy(() => import('./pages/Messages').then((m) => ({ default: m.Chat })));
+const Handover = lazy(() => import('./pages/Handover'));
+const Notifications = lazy(() => import('./pages/Notifications'));
+const Admin = lazy(() => import('./pages/Admin'));
+
+const APP_ROUTES: [string, React.ComponentType][] = [
+  ['/browse', Browse],
+  ['/items/:id', ItemPage],
+  ['/items/:id/claim', ClaimForm],
+  ['/found/new', FoundWizard],
+  ['/lost/new', LostWizard],
+  ['/my', MyItems],
+  ['/my/:tab', MyItems],
+  ['/my/found/:id/claims', ClaimReview],
+  ['/claims/:id', ClaimDetail],
+  ['/claims/:id/handover', Handover],
+  ['/messages', MessagesList],
+  ['/messages/:id', Chat],
+  ['/notifications', Notifications],
+  ['/settings', Settings],
+];
 
 function Shell({ children, tabs = true }: { children: React.ReactNode; tabs?: boolean }) {
   const { t } = useTranslation();
@@ -77,14 +107,23 @@ function AppRoutes() {
           </Shell>
         }
       />
-      <Route
-        path="/settings"
-        element={
-          <Shell>
-            <Settings />
-          </Shell>
-        }
-      />
+      {APP_ROUTES.map(([path, Page]) => (
+        <Route
+          key={path}
+          path={path}
+          element={
+            <Shell>
+              <Page />
+            </Shell>
+          }
+        />
+      ))}
+      {(user.role === 'admin' || user.role === 'moderator') && (
+        <>
+          <Route path="/admin" element={<Shell><Admin /></Shell>} />
+          <Route path="/admin/:tab" element={<Shell><Admin /></Shell>} />
+        </>
+      )}
       <Route
         path="*"
         element={
