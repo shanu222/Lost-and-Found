@@ -9,7 +9,7 @@ afterAll(() => pool.end());
 
 describe('country scoping', () => {
   it('counters only include the requester country', async () => {
-    const pk = await signIn('+923001234567', 'PK'); // seeded, onboarded in PK
+    const pk = await signIn('ayesha@demo.foundback.test', 'PK'); // seeded, onboarded in PK
     const res = await pk.agent.get('/api/meta/stats?country=AE').set(auth(pk.token)).expect(200);
     const { rows } = await pool.query(
       "SELECT count(*) FILTER (WHERE status='returned')::int AS returned FROM found_items WHERE country_code = 'PK'",
@@ -19,7 +19,7 @@ describe('country scoping', () => {
   });
 
   it('city search ignores any country in the query string', async () => {
-    const ae = await signIn('+971501234567', 'AE');
+    const ae = await signIn('fatima@demo.foundback.test', 'AE');
     const res = await ae.agent.get('/api/meta/cities?q=&country=PK&countryCode=PK').set(auth(ae.token)).expect(200);
     const names = res.body.cities.map((c) => c.name);
     expect(names).toContain('Dubai');
@@ -27,7 +27,7 @@ describe('country scoping', () => {
   });
 
   it('onboarding country cannot be changed once onboarded except through Settings', async () => {
-    const us = await signIn('+12125550147', 'US');
+    const us = await signIn('jessica@demo.foundback.test', 'US');
     const res = await us.agent.post('/api/me/onboarding/country').set(auth(us.token)).send({ countryCode: 'PK' }).expect(403);
     expect(res.body.error.code).toBe('ONBOARDING_DONE');
   });

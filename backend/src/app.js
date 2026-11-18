@@ -6,6 +6,7 @@ import cookieParser from 'cookie-parser';
 import { pinoHttp } from 'pino-http';
 import { env, isTest } from './config/env.js';
 import { logger } from './lib/logger.js';
+import { readiness } from './lib/readiness.js';
 import { pool } from './db/pool.js';
 import { apiLimiter } from './middleware/rateLimit.js';
 import { errorHandler, notFoundHandler } from './middleware/errors.js';
@@ -55,9 +56,20 @@ export function createApp() {
   app.use(cookieParser());
 
   app.get('/api/health', async (_req, res) => {
-    await pool.query('SELECT 1');
-    res.json({ ok: true });
+    if (!readiness.ready && !isTest) {
+      return res.status(503).json({ ok: false, stage: readiness.stage, error: readiness.error });
+    }
+    try {
+      await pool.query('SELECT 1');
+      res.json({ ok: true });
+    } catch (err) {
+      res.status(503).json({ ok: false, stage: 'database', error: err.message });
+    }
   });
+  // Until the database is migrated, everything else waits.
+  app.use('/api', (_req, res, next) =>
+    readiness.ready || isTest ? next() : res.status(503).json({ error: { code: 'STARTING', message: 'The service is starting. Please try again in a moment.' } }),
+  );
 
   app.use('/api', apiLimiter);
   app.use('/api', maintenanceGate);

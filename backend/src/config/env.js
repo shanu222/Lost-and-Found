@@ -11,7 +11,7 @@ const bool = z
 const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().default(4000),
-  DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
+  DATABASE_URL: z.string().min(1, 'DATABASE_URL is required — on Railway add a PostgreSQL service and set DATABASE_URL=${{Postgres.DATABASE_URL}}'),
   DATABASE_SSL: bool,
 
   // Comma-separated list of allowed browser origins (Vercel domain + previews).
@@ -31,7 +31,7 @@ const schema = z.object({
   HASH_PEPPER: z.string().min(32, 'HASH_PEPPER must be at least 32 chars'),
 
 
-  // Return OTP codes in API responses (dev SMS provider, never in production).
+  // Return sign-in codes in API responses when no email key is set (tests/dev only, never in production).
   OTP_DEV_ECHO: bool,
 
   NOMINATIM_URL: z.string().default('https://nominatim.openstreetmap.org'),
@@ -68,7 +68,3 @@ if (!parsed.success) {
 export const env = parsed.data;
 export const isProd = env.NODE_ENV === 'production';
 export const isTest = env.NODE_ENV === 'test';
-
-if (isProd && (process.env.SMS_PROVIDER ?? 'dev') === 'dev') {
-  console.warn('[config] SMS_PROVIDER=dev in production — OTP codes are only logged, not sent (change it in Admin → Settings).');
-}

@@ -11,7 +11,7 @@ import { countryName, formatNumber } from '../lib/format';
 import type { CountryConfig, FoundItem, Story, TrustLevel } from '../lib/types';
 import { useErrorMessage } from '../lib/useErrorMessage';
 
-const TRUST_ORDER: TrustLevel[] = ['new', 'phone_verified', 'identity_verified', 'trusted_returner'];
+const TRUST_ORDER: TrustLevel[] = ['new', 'email_verified', 'identity_verified', 'trusted_returner'];
 
 export default function Home() {
   const { t, i18n } = useTranslation();

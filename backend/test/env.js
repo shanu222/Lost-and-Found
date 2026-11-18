@@ -5,7 +5,7 @@ process.env.JWT_ACCESS_SECRET = 'test-access-secret-test-access-secret-012345678
 process.env.ENCRYPTION_KEY = Buffer.alloc(32, 7).toString('base64');
 process.env.HASH_PEPPER = 'test-pepper-test-pepper-test-pepper-0123456789';
 process.env.OTP_DEV_ECHO = 'true';
-process.env.SMS_PROVIDER = 'dev';
+process.env.RESEND_API_KEY = '';
 process.env.GOOGLE_CLIENT_ID = '';
 process.env.CORS_ORIGINS = 'http://localhost:5173';
 // Test-only staff account created by bootstrapAdmin in global setup.

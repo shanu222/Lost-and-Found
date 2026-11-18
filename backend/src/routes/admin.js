@@ -318,12 +318,15 @@ adminRouter.post('/claims/:id/review', validate({ params: z.object({ id: z.strin
 // ---------------------------------------------------------------------------
 // Users, claim history, bans
 // ---------------------------------------------------------------------------
+/** a•••@example.com — enough to tell accounts apart without exposing the address. */
+const maskEmail = (e) => (e ? String(e).replace(/^(.).*(@.*)$/, '$1•••$2') : null);
+
 adminRouter.get('/users', validate({ query: z.object({ q: z.string().trim().max(60).optional(), status: z.enum(['active', 'banned', 'deleted']).optional(), country: z.string().optional() }) }), async (req, res) => {
   const params = [];
   const where = [countryFilter(scope(req), 'u.country_code', params)];
   if (req.validQuery.q) {
     params.push(`%${req.validQuery.q.toLowerCase()}%`);
-    where.push(`(lower(u.display_name) LIKE $${params.length} OR u.id::text = $${params.length + 1})`);
+    where.push(`(lower(u.display_name) LIKE $${params.length} OR lower(u.email::text) LIKE $${params.length} OR u.id::text = $${params.length + 1})`);
     params.push(req.validQuery.q);
   }
   if (req.validQuery.status) {
@@ -331,7 +334,7 @@ adminRouter.get('/users', validate({ query: z.object({ q: z.string().trim().max(
     where.push(`u.status = $${params.length}`);
   }
   const { rows } = await query(
-    `SELECT u.id, u.display_name, u.country_code, u.role, u.status, u.trust_score, u.returns_count, u.created_at, u.phone_last4,
+    `SELECT u.id, u.display_name, u.country_code, u.role, u.status, u.trust_score, u.returns_count, u.created_at, u.email,
        u.location_country, u.ip_country, u.vpn_flagged_at,
        (SELECT count(*)::int FROM claims c WHERE c.claimant_id = u.id) AS claims,
        (SELECT count(*)::int FROM claims c WHERE c.claimant_id = u.id AND c.status = 'rejected') AS rejected_claims,
@@ -343,7 +346,7 @@ adminRouter.get('/users', validate({ query: z.object({ q: z.string().trim().max(
     users: rows.map((u) => ({
       id: u.id, displayName: u.display_name, countryCode: u.country_code?.trim() ?? null, role: u.role, status: u.status,
       trustScore: u.trust_score, returnsCount: u.returns_count, claims: u.claims, rejectedClaims: u.rejected_claims,
-      reports: u.reports, phoneLast4: u.phone_last4, createdAt: u.created_at,
+      reports: u.reports, email: maskEmail(u.email), createdAt: u.created_at,
       locationCountry: u.location_country?.trim() ?? null, ipCountry: u.ip_country?.trim() ?? null, vpnFlagged: Boolean(u.vpn_flagged_at),
     })),
   });
@@ -488,10 +491,10 @@ adminRouter.patch(
 // ---------------------------------------------------------------------------
 adminRouter.get('/moderators', adminOnly, async (_req, res) => {
   const { rows } = await query(
-    `SELECT m.user_id, m.country_codes, m.created_at, u.display_name, u.phone_last4, u.country_code
+    `SELECT m.user_id, m.country_codes, m.created_at, u.display_name, u.email, u.country_code
      FROM moderators m JOIN users u ON u.id = m.user_id ORDER BY m.created_at`,
   );
-  res.json({ moderators: rows.map((m) => ({ userId: m.user_id, displayName: m.display_name, phoneLast4: m.phone_last4, homeCountry: m.country_code?.trim(), countries: m.country_codes.map((c) => c.trim()), since: m.created_at })) });
+  res.json({ moderators: rows.map((m) => ({ userId: m.user_id, displayName: m.display_name, email: maskEmail(m.email), homeCountry: m.country_code?.trim(), countries: m.country_codes.map((c) => c.trim()), since: m.created_at })) });
 });
 
 adminRouter.put(

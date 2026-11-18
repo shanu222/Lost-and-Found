@@ -55,7 +55,7 @@ describe('admin and moderator permissions', () => {
   });
 
   it('moderators only see their countries; admins see all', async () => {
-    const admin = await signIn('+923011111111', 'PK'); // seeded admin
+    const admin = await signIn('foundback@demo.foundback.test', 'PK'); // seeded admin
     const mod = await onboardedUser('GB', 'Mod');
     await admin.agent.put(`/api/admin/moderators/${mod.user.id}`).set(auth(admin.token)).send({ countries: ['GB'] }).expect(200);
 
@@ -82,7 +82,7 @@ describe('admin and moderator permissions', () => {
   });
 
   it('admins edit per-country configuration; bans take effect immediately', async () => {
-    const admin = await signIn('+923011111111', 'PK');
+    const admin = await signIn('foundback@demo.foundback.test', 'PK');
     const res = await admin.agent.patch('/api/admin/countries/LK').set(auth(admin.token))
       .send({ nationalIdName: 'NIC', emergencyNumber: '119', languages: ['ta'], guidance: { en: { ids: 'Hand NICs to the police.' } } }).expect(200);
     expect(res.body.country).toMatchObject({ nationalIdName: 'NIC', emergencyNumber: '119', languages: ['ta'] });
@@ -99,7 +99,7 @@ describe('admin and moderator permissions', () => {
     const u = await onboardedUser('AE');
     const selfie = await (await import('./helpers.js')).testJpeg();
     await u.agent.post('/api/me/identity').set(auth(u.token)).field('data', JSON.stringify({ idNumber: '784-1990-1234567-1' })).attach('selfie', selfie, 's.jpg').expect(201);
-    const admin = await signIn('+923011111111', 'PK');
+    const admin = await signIn('foundback@demo.foundback.test', 'PK');
     const q = await admin.agent.get('/api/admin/identity?country=AE').set(auth(admin.token)).expect(200);
     expect(JSON.stringify(q.body)).not.toContain('1234567');
     const check = q.body.checks.find((c) => c.user.id === u.user.id);

@@ -22,7 +22,7 @@ interface SettingRow {
   masked?: string;
 }
 
-const GROUPS = ['general', 'features', 'security', 'limits', 'email', 'sms', 'signin', 'ai', 'location', 'push', 'storage'];
+const GROUPS = ['general', 'features', 'security', 'limits', 'email', 'signin', 'ai', 'location', 'push', 'storage'];
 type Value = string | number | boolean | null;
 
 export default function AdminSettings() {

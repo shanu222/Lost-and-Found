@@ -152,11 +152,11 @@ describe('claim → approval → handover code', () => {
     expect(ownerView.body.handover.code).toMatch(/^\d{6}$/);
     expect(finderView.body.handover.code).toBeNull();
 
-    // Phones only when both opt in.
-    await owner.agent.put(hUrl).set(auth(owner.token)).send({ sharePhone: true, method: 'meet', place: { name: 'Kings Cross police', ...PLACES.GB } }).expect(200);
-    expect((await finder.agent.get(hUrl).set(auth(finder.token))).body.handover.phones).toBeNull();
-    await finder.agent.put(hUrl).set(auth(finder.token)).send({ sharePhone: true }).expect(200);
-    expect((await finder.agent.get(hUrl).set(auth(finder.token))).body.handover.phones.other).toMatch(/^\+44/);
+    // Emails only when both opt in.
+    await owner.agent.put(hUrl).set(auth(owner.token)).send({ shareEmail: true, method: 'meet', place: { name: 'Kings Cross police', ...PLACES.GB } }).expect(200);
+    expect((await finder.agent.get(hUrl).set(auth(finder.token))).body.handover.emails).toBeNull();
+    await finder.agent.put(hUrl).set(auth(finder.token)).send({ shareEmail: true }).expect(200);
+    expect((await finder.agent.get(hUrl).set(auth(finder.token))).body.handover.emails.other).toMatch(/@test\.foundback\.invalid$/);
 
     // Owner cannot complete; wrong code fails; right code returns the item.
     await owner.agent.post(`${hUrl}/complete`).set(auth(owner.token)).send({ code: ownerView.body.handover.code }).expect(403);

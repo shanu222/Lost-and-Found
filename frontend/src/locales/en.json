@@ -44,18 +44,13 @@
   },
   "signIn": {
     "title": "Sign in to FoundBack",
-    "subtitle": "Use your phone number. We'll text you a 6-digit code.",
-    "phoneLabel": "Mobile number",
-    "phoneHint": "Enter the number without the country code, or with it.",
-    "countryCodeLabel": "Country code",
+    "subtitle": "Continue with Google, or get a 6-digit code by email. No password needed.",
     "sendCode": "Send code",
     "sending": "Sending…",
     "codeLabel": "6-digit code",
-    "codeSentTo": "We sent a code to {{phone}}.",
     "devCode": "Demo mode: your code is {{code}}",
     "verify": "Sign in",
     "verifying": "Checking…",
-    "changeNumber": "Change number",
     "resend": "Send a new code",
     "resendIn": "You can request a new code in {{seconds}} s",
     "or": "or",
@@ -64,12 +59,18 @@
     "terms": "By continuing you agree to the Terms and the Privacy Policy.",
     "points": {
       "privateTitle": "Your details stay private",
-      "privateBody": "Finders and owners never see each other's phone number until both agree.",
+      "privateBody": "Finders and owners never see each other's email until both agree.",
       "proofTitle": "Owners prove it's theirs",
       "proofBody": "Hidden questions and proof stop anyone else from claiming your things.",
       "localTitle": "Only your country",
       "localBody": "You see items, maps and guidance for the country you live in."
-    }
+    },
+    "emailLabel": "Email address",
+    "emailHint": "We'll email you a code. New here? This creates your account.",
+    "codeSentToEmail": "We sent a code to {{email}}.",
+    "checkSpam": "Can't find it? Check your spam or promotions folder.",
+    "changeEmail": "Use a different email",
+    "unavailable": "Sign-in is temporarily unavailable. Please try again later."
   },
   "onboarding": {
     "title": "Set up your profile",
@@ -77,7 +78,6 @@
     "steps": {
       "country": "Country",
       "city": "City",
-      "phone": "Phone",
       "language": "Language"
     },
     "country": {
@@ -105,13 +105,6 @@
       "useMyLocation": "Use my location",
       "locating": "Finding you…",
       "locationDenied": "We couldn't get your location. Tap the map instead."
-    },
-    "phone": {
-      "title": "Verify your phone number",
-      "body": "Your number is never shown to other people. It must be a {{country}} number.",
-      "verified": "{{phone}} is verified.",
-      "useDifferent": "Use a different number",
-      "verify": "Verify number"
     },
     "language": {
       "title": "Choose your language",
@@ -155,21 +148,20 @@
   },
   "trust": {
     "new": "New member",
-    "phone_verified": "Phone verified",
     "identity_verified": "Identity verified",
     "trusted_returner": "Trusted returner",
     "next": {
-      "new": "Verify your phone number to start posting and claiming.",
-      "phone_verified": "Return items to become a Trusted returner.",
+      "new": "Sign in with a verified email to start posting and claiming.",
       "identity_verified": "Return items to become a Trusted returner.",
-      "trusted_returner": "Thank you for helping people get their things back."
-    }
+      "trusted_returner": "Thank you for helping people get their things back.",
+      "email_verified": "Return items to become a Trusted returner."
+    },
+    "email_verified": "Email verified"
   },
   "settings": {
     "title": "Settings",
     "profile": "Profile",
     "displayName": "Display name",
-    "phone": "Phone number",
     "languageAndRegion": "Language and region",
     "language": "Language",
     "units": "Distance units",
@@ -182,7 +174,7 @@
     "changeCity": "Change city",
     "changeCountry": "Change country",
     "changeCountryTitle": "Change your country",
-    "changeCountryBody": "Only change this if you have moved. You'll see items in the new country only, you'll need to set your city and verify a phone number from that country again, and you can't change it again for 30 days.",
+    "changeCountryBody": "Only change this if you have moved. You'll see items in the new country only, you'll need to set your city and confirm your live location there again, and you can't change it again for 30 days.",
     "changeCountryConfirm": "Move to {{country}}",
     "changeCountryCooldown": "You can change your country again on {{date}}.",
     "notifications": "Notifications",
@@ -190,12 +182,12 @@
     "notifyEmail": "Email",
     "notifyPush": "Push notifications",
     "privacy": "Privacy and data",
-    "privacyBody": "We keep only what's needed to return items. Phone numbers, ID numbers and hidden answers are encrypted.",
+    "privacyBody": "We keep only what's needed to return items. ID numbers, serial numbers and hidden answers are encrypted.",
     "download": "Download my data",
     "downloading": "Preparing…",
     "delete": "Delete account",
     "deleteTitle": "Delete your account?",
-    "deleteBody": "Your profile, phone number and open posts are removed. This can't be undone. Type DELETE to confirm.",
+    "deleteBody": "Your profile, email address and open posts are removed. This can't be undone. Type DELETE to confirm.",
     "deleteConfirmLabel": "Type DELETE",
     "deleteConfirm": "Delete my account",
     "signOut": "Sign out",
@@ -208,7 +200,10 @@
     },
     "pushOn": "Turn on",
     "pushOff": "Turn off",
-    "changeCountryLive": "Your new country is set from your live location, so share it from the country you now live in."
+    "changeCountryLive": "Your new country is set from your live location, so share it from the country you now live in.",
+    "email": "Email",
+    "signInWith": "Sign in with",
+    "emailCode": "Email code"
   },
   "units": {
     "km": "{{value}} km",
@@ -225,9 +220,6 @@
     "UNAUTHORIZED": "Please sign in again.",
     "RATE_LIMITED": "Too many attempts. Please wait a few minutes and try again.",
     "VALIDATION_FAILED": "Some fields are not valid. Please check and try again.",
-    "PHONE_INVALID": "That phone number doesn't look right.",
-    "PHONE_COUNTRY_MISMATCH": "Please use a phone number from your country.",
-    "PHONE_IN_USE": "This number is already used by another account.",
     "OTP_INVALID": "That code isn't correct.",
     "OTP_EXPIRED": "This code has expired. Request a new one.",
     "COUNTRY_MISMATCH": "That place is not in your country.",
@@ -295,7 +287,7 @@
     "LOCATION_INVALID": "That location isn't valid.",
     "LOCATION_UNKNOWN": "We couldn't tell which country you're in. Try again with precise location on.",
     "ACCOUNT_LOCKED": "Too many failed attempts. Try again in 15 minutes.",
-    "EMAIL_FAILED": "The email couldn't be sent. Check the email settings.",
+    "EMAIL_FAILED": "We couldn't send the email. Please try again in a moment.",
     "REGISTRATION_CLOSED": "New sign-ups are paused right now. Please try again later.",
     "MAINTENANCE": "FoundBack is being updated. Please check back soon.",
     "FEATURE_DISABLED": "This feature is turned off right now.",
@@ -303,10 +295,14 @@
     "SETTING_UNKNOWN": "Unknown setting.",
     "PASSWORD_WRONG": "Your current password isn't correct.",
     "PASSWORD_WEAK": "Use at least 10 characters with upper- and lower-case letters, a number and a symbol.",
-    "EMAIL_NOT_CONFIGURED": "Add a Resend API key first.",
+    "EMAIL_NOT_CONFIGURED": "Email sign-in isn't set up yet. Please continue with Google.",
     "AI_FAILED": "No AI provider answered. Check the keys and models.",
     "NO_EMAIL": "Your account has no email address.",
-    "COUNTRY_REQUIRED": "Share your live location first."
+    "COUNTRY_REQUIRED": "Share your live location first.",
+    "EMAIL_INVALID": "That email address doesn't look right.",
+    "EMAIL_SIGNIN_DISABLED": "Email sign-in is turned off. Please continue with Google.",
+    "STAFF_LOGIN_REQUIRED": "This is a staff account. Sign in from the staff sign-in page.",
+    "STARTING": "FoundBack is starting up. Please try again in a moment."
   },
   "status": {
     "waiting": "Waiting for owner",
@@ -757,10 +753,8 @@
     },
     "when": "Date and time",
     "scheduled": "Planned for {{date}}",
-    "sharePhone": "Share my phone number",
     "otherShares": "The other person agreed to share theirs.",
-    "otherNotShares": "Numbers are shown only if you both agree.",
-    "otherPhone": "Their number:",
+    "otherNotShares": "Emails are shown only if you both agree.",
     "courierNote": "Never pay for an item. FoundBack never asks for money.",
     "returned": "Returned to its owner",
     "thanksRated": "Thank you for your rating!",
@@ -773,7 +767,9 @@
     "reward": "Reward given ({{currency}})",
     "rewardHint": "Only for your records. FoundBack doesn't handle payments.",
     "shareStory": "Share my note as a success story in my country (no names or contact details)",
-    "sendRating": "Send rating"
+    "sendRating": "Send rating",
+    "shareEmail": "Share my email address",
+    "otherEmail": "Their email:"
   },
   "notifications": {
     "title": "Notifications",
@@ -1020,7 +1016,7 @@
     "codeSent": "We emailed a 6-digit code to {{email}}.",
     "signIn": "Sign in",
     "note": "For FoundBack admins and moderators. 5 wrong passwords lock the account for 15 minutes.",
-    "userSignIn": "Not staff? Sign in with your phone",
+    "userSignIn": "Not staff? Sign in with Google or email",
     "link": "Staff sign-in"
   },
   "adminSettings": {
@@ -1049,7 +1045,6 @@
       "security": "Location & security",
       "limits": "Limits",
       "email": "Email",
-      "sms": "SMS",
       "signin": "Google sign-in",
       "ai": "AI & translation",
       "location": "IP location",
@@ -1061,8 +1056,7 @@
       "features": "Switch features on or off for everyone.",
       "security": "How strictly location and staff sign-in are enforced.",
       "limits": "Daily limits and time windows that protect against abuse.",
-      "email": "Used for notifications and staff sign-in codes.",
-      "sms": "Use \"dev\" only for testing — codes then appear in the server logs.",
+      "email": "Used for sign-in codes, notifications and staff sign-in codes. Without a Resend key, email sign-in is unavailable in production.",
       "signin": "Paste the Web client ID from Google Cloud to show \"Continue with Google\".",
       "ai": "Translation of posts and chat, and photo moderation. Providers are tried in order until one answers.",
       "location": "Optional: lets the VPN check work everywhere by looking up the country of each IP address.",
@@ -1095,10 +1089,6 @@
       "country_change_cooldown_days": "Days between country changes",
       "resend_api_key": "Resend API key",
       "email_from": "Sender (From) address",
-      "sms_provider": "SMS provider",
-      "twilio_account_sid": "Twilio Account SID",
-      "twilio_auth_token": "Twilio Auth Token",
-      "twilio_from": "Twilio sender number",
       "google_client_id": "Google OAuth client ID",
       "translate_provider": "Translation provider",
       "moderation_provider": "Photo moderation",
@@ -1124,7 +1114,8 @@
       "r2_account_id": "R2 account ID",
       "r2_access_key_id": "R2 access key ID",
       "r2_secret_access_key": "R2 secret access key",
-      "r2_bucket": "R2 bucket"
+      "r2_bucket": "R2 bucket",
+      "email_signin_enabled": "Email code sign-in"
     },
     "options": {
       "block": "Block",
@@ -1133,7 +1124,6 @@
       "info": "Information",
       "warning": "Warning",
       "dev": "Dev (log codes)",
-      "twilio": "Twilio",
       "none": "Off",
       "ai": "AI (OpenAI → Gemini → OpenRouter)",
       "google": "Google Translate",

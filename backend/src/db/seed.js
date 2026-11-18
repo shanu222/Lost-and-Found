@@ -3,15 +3,14 @@
 //
 // Creates: per-country config tweaks (bbox), popular cities, demo users
 // (one finder + one owner per country, plus an admin) and a handful of found
-// items with encrypted hidden questions. Demo users sign in with the phone
-// numbers below; with SMS_PROVIDER=dev the OTP is printed in the API logs
-// (and returned in the response when OTP_DEV_ECHO=true).
+// items with encrypted hidden questions. Demo users sign in with the emailed
+// code at <firstname>@demo.foundback.test; without a Resend key the code is
+// printed in the API logs (and returned in the response when OTP_DEV_ECHO=true).
 import { fileURLToPath } from 'node:url';
 import { migrate } from './migrate.js';
 import { pool, tx } from './pool.js';
-import { blindIndex, encrypt } from '../lib/crypto.js';
+import { encrypt } from '../lib/crypto.js';
 import { approximate } from '../lib/geo.js';
-import { normalizePhone } from '../lib/phone.js';
 import { matchLostReport } from '../services/matching.js';
 
 const BBOX = {
@@ -54,7 +53,10 @@ const CITIES = {
   ],
 };
 
-// [phone, display name, country, city, language, role]
+// [internal key, display name, country, city, language, role] — sign-in email is demoEmail(name)
+/** Demo sign-in address for a seeded user, e.g. ayesha@demo.foundback.test */
+const demoEmail = (name) => `${name.toLowerCase().split(' ')[0]}@demo.foundback.test`;
+
 const USERS = [
   ['+923001234567', 'Ayesha', 'PK', 'Islamabad', 'ur', 'user'],
   ['+923331234567', 'Bilal', 'PK', 'Lahore', 'en', 'user'],
@@ -115,14 +117,14 @@ export async function seed() {
 
     const userIds = {};
     for (const [phoneRaw, name, cc, city, language, role] of USERS) {
-      const phone = normalizePhone(phoneRaw, cc);
+      const email = demoEmail(name);
       const { rows } = await db.query(
-        `INSERT INTO users (display_name, phone_enc, phone_hash, phone_last4, phone_verified_at, country_code, city_id,
+        `INSERT INTO users (display_name, email, email_verified, email_verified_at, country_code, city_id,
                             language, text_dir, timezone, currency, units, locale, role, onboarding_completed_at, trust_score)
-         VALUES ($1,$2,$3,$4,now(),$5,$6,$7,$8,$9,$10,$11,$12,$13,now(),10)
-         ON CONFLICT (phone_hash) DO UPDATE SET display_name = EXCLUDED.display_name, role = EXCLUDED.role
+         VALUES ($1,$2,true,now(),$3,$4,$5,$6,$7,$8,$9,$10,$11,now(),10)
+         ON CONFLICT (email) DO UPDATE SET display_name = EXCLUDED.display_name, role = EXCLUDED.role
          RETURNING id`,
-        [name, encrypt(phone.e164), blindIndex(phone.e164, 'phone'), phone.last4, cc, cityIds[`${cc}:${city}`].id,
+        [name, email, cc, cityIds[`${cc}:${city}`].id,
           language, ['ur', 'ar'].includes(language) ? 'rtl' : 'ltr', TZ[cc], CURRENCY[cc], UNITS[cc], `${language}-${cc}`, role],
       );
       userIds[phoneRaw] = rows[0].id;
@@ -221,8 +223,8 @@ const RETURNS = [
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   seed()
     .then(() => {
-      console.log('Seed complete. Demo phone numbers:');
-      for (const [phone, name, cc, , , role] of USERS) console.log(`  ${cc}  ${phone}  ${name}${role === 'admin' ? ' (admin)' : ''}`);
+      console.log('Seed complete. Demo accounts (sign in with the emailed code):');
+      for (const [, name, cc, , , role] of USERS) console.log(`  ${cc}  ${demoEmail(name)}  ${name}${role === 'admin' ? ' (admin)' : ''}`);
       return pool.end();
     })
     .catch((err) => {

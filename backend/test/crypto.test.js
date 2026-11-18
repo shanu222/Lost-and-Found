@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { blindIndex, decrypt, encrypt } from '../src/lib/crypto.js';
 import { approximate, haversine } from '../src/lib/geo.js';
-import { normalizePhone } from '../src/lib/phone.js';
 
 describe('field encryption', () => {
   it('round-trips and uses a fresh IV each time', () => {
@@ -21,18 +20,6 @@ describe('field encryption', () => {
   it('blind index ignores spacing/case and differs by purpose', () => {
     expect(blindIndex('ab 12-34')).toBe(blindIndex('AB1234'));
     expect(blindIndex('x', 'phone')).not.toBe(blindIndex('x', 'id'));
-  });
-});
-
-describe('phone numbers', () => {
-  it('normalises national input with the country', () => {
-    expect(normalizePhone('0300 1234567', 'PK').e164).toBe('+923001234567');
-  });
-  it('rejects numbers from another country', () => {
-    expect(() => normalizePhone('+971501234567', 'PK')).toThrow(/must belong/);
-  });
-  it('rejects invalid numbers', () => {
-    expect(() => normalizePhone('12345', 'PK')).toThrow();
   });
 });
 

@@ -209,7 +209,7 @@ foundItemsRouter.get('/:id', validate({ params: z.object({ id: z.string().uuid()
     'SELECT id, status FROM claims WHERE found_item_id = $1 AND claimant_id = $2 ORDER BY created_at DESC LIMIT 1',
     [item.id, req.user.id],
   );
-  const finder = await query('SELECT display_name, returns_count, phone_verified_at, trust_score FROM users WHERE id = $1', [item.finder_id]);
+  const finder = await query('SELECT display_name, returns_count, email_verified, trust_score FROM users WHERE id = $1', [item.finder_id]);
   res.json({
     item: {
       ...out,

@@ -75,7 +75,7 @@ adminAuthRouter.post(
     if (recent.rows[0].n >= (isTest ? 1000 : 5)) throw tooMany('Too many codes requested. Please wait a few minutes.');
     const code = randomDigits(6);
     await query(
-      "INSERT INTO otp_codes (phone_hash, purpose, code_hash, user_id, expires_at, ip) VALUES ($1,'admin_2fa',$2,$3, now() + interval '10 minutes', $4)",
+      "INSERT INTO otp_codes (subject_hash, purpose, code_hash, user_id, expires_at, ip) VALUES ($1,'admin_2fa',$2,$3, now() + interval '10 minutes', $4)",
       [`admin:${u.id}`, codeHash(u.id, code), u.id, req.ip],
     );
     const s = await settings();

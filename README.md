@@ -11,7 +11,7 @@ Each user lives in one **country space**: they only see items, maps, matches, sa
 ## Admin panel and live settings
 
 - **Staff sign-in:** `/admin/login` — email + password, then a 6-digit code emailed to the staff address. Five wrong passwords lock the account for 15 minutes; every attempt is in the audit log. The first admin is created on start from `ADMIN_EMAIL` + `ADMIN_INITIAL_PASSWORD` (then change the password in **Admin → Settings → My staff account**).
-- **Admin → Settings** changes the website and the installed phone app live (within ~3 minutes, no redeploy): maintenance mode, announcement banner, new sign-ups on/off, feature switches (Google sign-in, translation, push, travel mode), limits (posts/claims per day, claim expiry, travel length, country-change cooldown), location/VPN policy, and **every integration key** — Resend, Twilio, Google client ID, OpenAI/Gemini/OpenRouter, Google Translate/DeepL, ipinfo, VAPID and R2.
+- **Admin → Settings** changes the website and the installed phone app live (within ~3 minutes, no redeploy): maintenance mode, announcement banner, new sign-ups on/off, feature switches (email-code sign-in, Google sign-in, translation, push, travel mode), limits (posts/claims per day, claim expiry, travel length, country-change cooldown), location/VPN policy, and **every integration key** — Resend, Google client ID, OpenAI/Gemini/OpenRouter, Google Translate/DeepL, ipinfo, VAPID and R2.
 - Keys are stored AES-256-GCM encrypted, are write-only (the panel shows `••••1234`), and changes are audit-logged by name only. A value set in the panel overrides the Railway variable; **Remove** falls back to Railway.
 - Core secrets stay in Railway only: `DATABASE_URL`, `JWT_ACCESS_SECRET`, `ENCRYPTION_KEY`, `HASH_PEPPER`.
 - The installed app (PWA) and any future native app read the same live config from `GET /api/meta/app-config`.
@@ -30,7 +30,7 @@ Each user lives in one **country space**: they only see items, maps, matches, sa
 - [Local setup](#local-setup)
 - [Demo accounts](#demo-accounts)
 - [Environment variables](#environment-variables)
-- [Deploying](#deploying) (Railway, Vercel, Cloudflare R2, Google, SMS)
+- [Deploying](#deploying) (Railway, Vercel, Cloudflare R2, Google, email)
 - [Security model](#security-model)
 - [Data model](#data-model)
 - [Adding a country](#adding-a-country)
@@ -57,7 +57,6 @@ flowchart LR
   end
   R2[("Cloudflare R2<br/>private bucket<br/>5-min signed URLs")]
   OSM["OpenStreetMap tiles<br/>Nominatim geocoding"]
-  SMS["SMS provider<br/>(dev console · Twilio)"]
   Mail["Resend (email)"]
   Google["Google Identity"]
 
@@ -67,7 +66,6 @@ flowchart LR
   API --> R2
   API -->|"cached, 1 req/s, countrycodes"| OSM
   SPA -->|tiles| OSM
-  API --> SMS
   API --> Mail
   SPA --> Google
   API -->|verify ID token| Google
@@ -93,10 +91,10 @@ backend/                     Express API (Railway service root)
       countries-sync.js      Inserts missing ISO countries/languages
       seed.js                Demo data for PK, GB, AE, US
     data/                    Country defaults & supported languages
-    lib/                     crypto (AES-256-GCM, blind index), phone, geo, errors, audit, validation
+    lib/                     crypto (AES-256-GCM, blind index), geo, errors, audit, validation
     middleware/              auth, rate limits, error handler
     routes/                  auth, me (onboarding/settings/export/delete), meta
-    services/                tokens, otp, sms/, email, geocode (Nominatim), countries, users
+    services/                tokens, otp (email codes), email, geocode (Nominatim), countries, users
   test/                      Vitest + Supertest against a real Postgres
   railway.json
 frontend/                    React app (Vercel project root)
@@ -104,7 +102,7 @@ frontend/                    React app (Vercel project root)
     i18n/                    i18next setup + language list
     locales/*.json           One file per language (en, ur, ar complete; others scaffolded)
     auth/AuthProvider.tsx    Session state, silent refresh, language sync
-    components/              Header, LanguageSwitcher, PhoneOtpForm, CountryList, HomeAreaMap…
+    components/              Header, LanguageSwitcher, EmailCodeForm, CountryList, HomeAreaMap…
     pages/                   SignIn, Onboarding, Home, Settings, NotFound
     styles/index.css         Design tokens & styles (logical properties for RTL)
   scripts/i18n-tools.mjs     Scaffold missing keys / print translation coverage
@@ -143,11 +141,11 @@ openssl rand -base64 32   # ENCRYPTION_KEY (must decode to exactly 32 bytes)
 openssl rand -base64 48   # HASH_PEPPER
 ```
 
-With `SMS_PROVIDER=dev` the one-time codes are printed in the API console. With `OTP_DEV_ECHO=true` (development only) the code is also returned to the app and shown on the sign-in screen as "Demo mode: your code is …".
+Without a Resend key the one-time sign-in codes are printed in the API console. With `OTP_DEV_ECHO=true` (development only) the code is also returned to the app and shown on the sign-in screen as "Demo mode: your code is …".
 
 ## Demo accounts
 
-`npm run seed` creates onboarded users. Sign in with their number; the one-time code appears in the API log (and on screen when `OTP_DEV_ECHO=true` in development):
+`npm run seed` creates onboarded users. Sign in with their email address (`<firstname>@demo.foundback.test`); the one-time code appears in the API log (and on screen when `OTP_DEV_ECHO=true` in development):
 
 | Country | Phone | Name | Language |
 |---|---|---|---|
@@ -180,12 +178,10 @@ It also seeds popular cities, bounding boxes and 13 found items (with encrypted 
 | `ACCESS_TOKEN_TTL` | no | Default `15m` |
 | `REFRESH_TOKEN_TTL_DAYS` | no | Default `30` |
 | `COOKIE_SAMESITE` | no | `lax` (default, with rewrite) or `none` (direct cross-site calls) |
-| `ENCRYPTION_KEY` | yes | 32 bytes, base64. AES-256-GCM key for phone numbers, ID numbers, IMEI, hidden answers. **Back it up — data is unreadable without it.** |
+| `ENCRYPTION_KEY` | yes | 32 bytes, base64. AES-256-GCM key for ID numbers, IMEI, hidden answers. **Back it up — data is unreadable without it.** |
 | `HASH_PEPPER` | yes | ≥ 32 chars. HMAC key for blind indexes, OTP and handover codes |
 | `GOOGLE_CLIENT_ID` | no | Enables Google sign-in |
-| `SMS_PROVIDER` | no | `dev` (log codes) or `twilio` |
 | `OTP_DEV_ECHO` | no | `true` returns codes to the app; ignored when `NODE_ENV=production` |
-| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM` | with Twilio | Twilio credentials and sender |
 | `RESEND_API_KEY` | no | Emails are logged instead of sent when empty |
 | `EMAIL_FROM` | no | Verified Resend sender, e.g. `FoundBack <no-reply@yourdomain.com>` |
 | `NOMINATIM_URL` | no | Default public Nominatim; use your own instance for heavy traffic |
@@ -260,17 +256,17 @@ Object keys are `{country}/{yyyy-mm}/{uuid}.jpg` with `{uuid}_thumb.jpg` thumbna
 
 Google Cloud Console → **APIs & Services → Credentials → Create OAuth client ID → Web application**. Add your Vercel domain (and `http://localhost:5173`) to **Authorized JavaScript origins**. Use the client ID for both `GOOGLE_CLIENT_ID` and `VITE_GOOGLE_CLIENT_ID`.
 
-### 5. SMS
+### 5. Email sign-in
 
-`SMS_PROVIDER=dev` logs codes (fine for demos; in production read them from Railway logs). For real SMS set `SMS_PROVIDER=twilio` and the Twilio variables. To add another provider, implement `send({ to, body })` in `backend/src/services/sms/index.js` and register it.
+Users sign in with Google or with a 6-digit code emailed through Resend (the same `RESEND_API_KEY` / `EMAIL_FROM`). In production, email sign-in needs a Resend key; Admin → Settings → Features can switch it off. There is no SMS.
 
 ## Security model
 
-- **Authentication.** Phone OTP (6 digits, HMAC-hashed, 5-minute expiry, 5 attempts, 3 codes per 10 minutes per number) or Google ID token. Access tokens are 15-minute JWTs kept in memory only. Refresh tokens are opaque, stored hashed, sent as an `httpOnly` cookie scoped to `/api/auth`, **rotated on every use**; re-using an old one revokes the whole session family (theft detection), with a 10-second grace window for two tabs refreshing at once.
-- **Field encryption.** AES-256-GCM (`v1:iv:tag:ciphertext`, versioned for key rotation) for phone numbers, ID numbers, IMEI/serials and hidden answers. Lookups and comparisons use keyed HMAC "blind indexes", never plaintext. Phones are only ever shown masked (`+92 •••• 4567`).
-- **Country scoping.** Enforced on the server from the user row. Cities, home pins (reverse-geocoded) and phone numbers must belong to the user's country. Nominatim city results are returned with an HMAC-signed reference, so the client cannot invent a city or move it to another country.
+- **Authentication.** Emailed one-time code (6 digits, HMAC-hashed, 10-minute expiry, 5 attempts, 3 codes per 10 minutes per address) or Google ID token. A Google account and an email-code account with the same verified address are the same account. Staff accounts can only use the password + emailed 2-step login. Access tokens are 15-minute JWTs kept in memory only. Refresh tokens are opaque, stored hashed, sent as an `httpOnly` cookie scoped to `/api/auth`, **rotated on every use**; re-using an old one revokes the whole session family (theft detection), with a 10-second grace window for two tabs refreshing at once.
+- **Field encryption.** AES-256-GCM (`v1:iv:tag:ciphertext`, versioned for key rotation) for ID numbers, IMEI/serials and hidden answers. Lookups and comparisons use keyed HMAC "blind indexes", never plaintext. Email addresses are shown masked to moderators (`s•••@example.com`).
+- **Country scoping.** Enforced on the server from the user row. Cities, home pins (reverse-geocoded) and the live GPS location must belong to the user's country. Nominatim city results are returned with an HMAC-signed reference, so the client cannot invent a city or move it to another country.
 - **Input validation.** zod on every body, query and parameter; consistent errors: `{ "error": { "code", "message", "details"? } }`. The web app translates `code` into the user's language.
-- **Hardening.** helmet, CORS allow-list, rate limits (global, auth, OTP, geocoding), JSON body limit, no stack traces in responses, PII-redacting logs, audit log of sensitive actions (sign-ups, phone verification, country changes, exports, deletions, refresh-token re-use).
+- **Hardening.** helmet, CORS allow-list, rate limits (global, auth, OTP, geocoding), JSON body limit, no stack traces in responses, PII-redacting logs, audit log of sensitive actions (sign-ups, sign-ins, country changes, exports, deletions, refresh-token re-use).
 - **Privacy.** Data export (`GET /api/me/export`) and account deletion (anonymises the profile, closes open posts and claims, revokes sessions). Exact item locations are stored privately; the public point is randomised within a 500 m circle that always contains the real point.
 
 ## Data model
@@ -282,7 +278,7 @@ All tables are created in `backend/src/db/migrations/001_init.sql`; stage 1 uses
 | `countries` | Admin-editable per-country config: name, flag, dialling codes, currency, distance unit, time zones, emergency number, authority name, national ID name, ID-number pattern (used to block IDs in public text), guidance per language (`{ en: {ids, documents, cash, general}, ur: {…} }`), safe-place types, enabled flag, optional bounding box |
 | `country_languages` | Languages offered next to English, in order |
 | `cities` | Seeded popular cities + places picked from Nominatim (`source`, `external_id`) |
-| `users` | Profile, `country_code`, `city_id`, optional home area, `language`, `timezone`, `currency`, `units`, `locale`, `text_dir`, role, trust score, encrypted phone + blind index, country-change timestamp, travel mode |
+| `users` | Profile, `country_code`, `city_id`, optional home area, `language`, `timezone`, `currency`, `units`, `locale`, `text_dir`, role, trust score, email, country-change timestamp, travel mode |
 | `refresh_tokens` | Hashed rotating refresh tokens grouped in families |
 | `otp_codes` | Hashed one-time codes, attempts, expiry |
 | `identity_checks` | Optional ID number (encrypted) + selfie, admin review |
@@ -294,7 +290,7 @@ All tables are created in `backend/src/db/migrations/001_init.sql`; stage 1 uses
 | `matches`, `saved_alerts` | Lost ↔ found matches with score breakdown; alert subscriptions |
 | `conversations`, `messages` | Masked chat (one conversation per claim), original language |
 | `translations_cache` | Cached translations by source hash + target language |
-| `handovers` | Mutual agreement, method, place, phone-reveal opt-ins, HMAC of the handover code, completion |
+| `handovers` | Mutual agreement, method, place, email-reveal opt-ins, HMAC of the handover code, completion |
 | `ratings`, `reports` | Post-return ratings/stories; abuse reports |
 | `notifications`, `push_subscriptions` | In-app/email/push notifications rendered in the user's language |
 | `moderators` | Moderator → countries |
@@ -326,7 +322,7 @@ All 252 ISO 3166 countries already exist with sensible defaults (flag, dialling 
 3. Translate the strings. Empty strings fall back to English automatically. Use i18next plural suffixes for the language's plural rules (`_zero`, `_one`, `_two`, `_few`, `_many`, `_other`).
 4. Check progress with `npm run i18n:coverage`.
 5. For a right-to-left language set `dir: 'rtl'`; the layout mirrors automatically (`<html dir>` + CSS logical properties). If it needs a special font, add it in `src/main.tsx` and `styles/index.css` (see the Urdu/Arabic rules).
-6. Optional: add OTP SMS text in `backend/src/services/sms/index.js` and country guidance in that language.
+6. Optional: add the sign-in email text in `backend/src/services/otp.js` and country guidance in that language.
 
 ## Testing
 
@@ -335,7 +331,7 @@ cd backend && npm test     # needs Postgres; uses TEST_DATABASE_URL or postgresq
 cd frontend && npm test
 ```
 
-The API suite (54 tests) runs against a real database that it resets and seeds. It covers OTP sign-in, attempt limits and throttling, refresh-token rotation and re-use detection, logout, encryption and blind indexes, phone-country validation, onboarding rules (city/home pin/phone must be in the user's country, signed city references cannot be forged), country scoping of counters and city search, the 30-day country-change cooldown, data export, account deletion and the error format.
+The API suite (64 tests) runs against a real database that it resets and seeds. It covers email-code sign-in (incl. staff accounts being refused), attempt limits and throttling, refresh-token rotation and re-use detection, logout, encryption and blind indexes, onboarding rules (city/home pin must be in the user's country, signed city references cannot be forged), country scoping of counters and city search, the 30-day country-change cooldown, data export, account deletion and the error format.
 
 The web suite checks English as the default, instant switching to Urdu/Arabic with RTL, Arabic plural rules, fallback to English for missing keys and unsupported languages, and that Urdu and Arabic contain every English string.
 
@@ -345,7 +341,7 @@ It also covers posting (EXIF stripping, approximate locations, blocked contact d
 
 | Stage | Scope | Status |
 |---|---|---|
-| 1 | Schema, auth, onboarding (country/city/phone/language), i18n + RTL | ✅ Done |
+| 1 | Schema, auth, onboarding (country/city/language), i18n + RTL | ✅ Done |
 | 2 | Found & lost posting, R2 uploads (EXIF strip, face blur, thumbnails), browse/map, server-side scoping | ✅ Done |
 | 3 | Claim & verification flow | ✅ Done |
 | 4 | Masked chat, handover with code/QR | ✅ Done |
@@ -355,9 +351,9 @@ It also covers posting (EXIF stripping, approximate locations, blocked contact d
 
 ### Product decisions taken (change them if you prefer otherwise)
 
-- **Phone numbers must belong to the user's country**, and changing country asks for a phone number from the new country. An expat using a home-country SIM cannot verify. Relax this in `backend/src/lib/phone.js` (`normalizePhone`) and `routes/me.js` if needed.
+- **No SMS.** Accounts are email (code) or Google. Notifications go by push, email and in-app only.
 - **Travel mode** also lets the traveller open and claim items in that one other country (otherwise a match abroad could never be claimed).
-- **Chat** stays masked even after approval; phone numbers are only revealed on the handover screen when both people opt in.
+- **Chat** stays masked even after approval; email addresses are only revealed on the handover screen when both people opt in.
 - **Rewards** are recorded for the owner's records only; FoundBack never handles money.
 - **Sign-in screen** defaults the dialling code to the visitor's detected country, or Pakistan if none is detected.
 - Chat uses polling every 4 seconds (no WebSockets), which keeps Railway hosting simple.

@@ -31,6 +31,7 @@ export const DEFINITIONS = {
   min_app_version: S('general', '1.0.0', { public: true, max: 20 }),
 
   // ---- Features
+  email_signin_enabled: B('features', true, { public: true }),
   google_signin_enabled: B('features', true, { public: true }),
   translation_enabled: B('features', true, { public: true }),
   push_enabled: B('features', true, { public: true }),
@@ -52,13 +53,9 @@ export const DEFINITIONS = {
   travel_days: N('limits', 30, 1, 90, { public: true }),
   country_change_cooldown_days: N('limits', 30, 0, 365, { public: true }),
 
-  // ---- Email & SMS
+  // ---- Email (sign-in codes + notifications)
   resend_api_key: K('email'),
   email_from: S('email', 'FoundBack <no-reply@example.com>'),
-  sms_provider: E('sms', 'dev', ['dev', 'twilio']),
-  twilio_account_sid: K('sms'),
-  twilio_auth_token: K('sms'),
-  twilio_from: S('sms', ''),
 
   // ---- Sign-in
   google_client_id: S('signin', '', { public: true }),
@@ -162,6 +159,7 @@ export async function publicConfig() {
   for (const [key, def] of Object.entries(DEFINITIONS)) if (def.public) out[key] = values[key];
   out.translation_available = values.translation_enabled && values.translate_provider !== 'none';
   out.google_signin_available = values.google_signin_enabled && Boolean(values.google_client_id);
+  out.email_signin_available = values.email_signin_enabled;
   out.push_available = values.push_enabled && Boolean(values.vapid_public_key && values.vapid_private_key);
   return out;
 }

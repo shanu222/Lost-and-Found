@@ -258,7 +258,7 @@ function Photos({ q }: { q: string }) {
 }
 
 // ---------------------------------------------------------------------------
-interface UserRow { id: string; displayName: string | null; countryCode: string | null; role: string; status: string; trustScore: number; returnsCount: number; claims: number; rejectedClaims: number; reports: number; phoneLast4: string | null; createdAt: string; locationCountry?: string | null; ipCountry?: string | null; vpnFlagged?: boolean }
+interface UserRow { id: string; displayName: string | null; countryCode: string | null; role: string; status: string; trustScore: number; returnsCount: number; claims: number; rejectedClaims: number; reports: number; email: string | null; createdAt: string; locationCountry?: string | null; ipCountry?: string | null; vpnFlagged?: boolean }
 interface UserDetail { user: UserRow & { bannedReason: string | null }; claims: { id: string; status: string; flags: string[]; identifierMatch: boolean | null; rejectReason: string | null; createdAt: string; category: string; description: string; itemId: string }[] }
 function Users({ q, selfId }: { q: string; selfId?: string }) {
   const { t } = useTranslation();
@@ -454,7 +454,7 @@ function CountryDialog({ country, onClose, onSaved }: { country: CountryRow; onC
 // ---------------------------------------------------------------------------
 function Moderators() {
   const { t } = useTranslation();
-  const state = useApi<{ moderators: { userId: string; displayName: string | null; phoneLast4: string | null; homeCountry: string | null; countries: string[] }[] }>('/admin/moderators');
+  const state = useApi<{ moderators: { userId: string; displayName: string | null; email: string | null; homeCountry: string | null; countries: string[] }[] }>('/admin/moderators');
   const { busy, error, run } = useAct();
   const [userId, setUserId] = useState('');
   const [list, setList] = useState('');

@@ -1,4 +1,4 @@
-// Four quick steps: country → city (+ optional home area) → phone → language & name.
+// Three quick steps: country (from live location) → city (+ optional home area) → language & name.
 // Every step saves to the server immediately, so the user can leave and resume.
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -7,7 +7,6 @@ import { useAuth } from '../auth/AuthProvider';
 import { CountryList } from '../components/CountryList';
 import { CheckIcon, SearchIcon } from '../components/Icons';
 import { LanguageOptions } from '../components/LanguageSwitcher';
-import { PhoneOtpForm } from '../components/PhoneOtpForm';
 import { Alert, Button, Dialog, ErrorState, LoadingState } from '../components/ui';
 import { getLanguage } from '../i18n/languages';
 import { api } from '../lib/api';
@@ -21,14 +20,13 @@ import { useAppConfig } from '../lib/appConfig';
 
 const HomeAreaMap = lazy(() => import('../components/HomeAreaMap'));
 
-const STEPS = ['country', 'city', 'phone', 'language'] as const;
+const STEPS = ['country', 'city', 'language'] as const;
 type Step = (typeof STEPS)[number];
 
 function firstIncomplete(user: Me): Step {
   const s = user.onboarding.steps;
   if (!s.country) return 'country';
   if (!s.city) return 'city';
-  if (!s.phone) return 'phone';
   return 'language';
 }
 
@@ -58,9 +56,8 @@ export default function Onboarding() {
       </ol>
       <div className="panel">
         {step === 'country' && <CountryStep onNext={() => go('city')} />}
-        {step === 'city' && <CityStep onBack={() => go('country')} onNext={() => go('phone')} />}
-        {step === 'phone' && <PhoneStep onBack={() => go('city')} onNext={() => go('language')} />}
-        {step === 'language' && <LanguageStep onBack={() => go('phone')} />}
+        {step === 'city' && <CityStep onBack={() => go('country')} onNext={() => go('language')} />}
+        {step === 'language' && <LanguageStep onBack={() => go('city')} />}
       </div>
     </main>
   );
@@ -333,58 +330,6 @@ function CityStep({ onBack, onNext }: { onBack: () => void; onNext: () => void }
           {t('app.back')}
         </Button>
         <Button onClick={save} loading={busy} disabled={!city}>
-          {t('app.continue')}
-        </Button>
-      </div>
-    </section>
-  );
-}
-
-// ---------------------------------------------------------------------------
-function PhoneStep({ onBack, onNext }: { onBack: () => void; onNext: () => void }) {
-  const { t } = useTranslation();
-  const { user, setUser } = useAuth();
-  const [changing, setChanging] = useState(false);
-  const { countries } = useCountries();
-  if (!user) return null;
-  const cName = user.country ? countryName(user.country.code, user.country.name) : '';
-  const verified = user.onboarding.steps.phone && user.phone;
-
-  return (
-    <section className="stack" aria-labelledby="step-title">
-      <div>
-        <h2 id="step-title">{t('onboarding.phone.title')}</h2>
-        <p className="muted" style={{ margin: 0 }}>
-          {t('onboarding.phone.body', { country: cName })}
-        </p>
-      </div>
-      {verified && !changing ? (
-        <>
-          <div className="verified">
-            <CheckIcon />
-            <span>{t('onboarding.phone.verified', { phone: `⁦${user.phone!.masked}⁩` })}</span>
-          </div>
-          <Button variant="link" onClick={() => setChanging(true)} style={{ alignSelf: 'flex-start' }}>
-            {t('onboarding.phone.useDifferent')}
-          </Button>
-        </>
-      ) : (
-        <PhoneOtpForm<{ user: Me }>
-          mode="verify"
-          countryCode={user.countryCode}
-          countries={countries}
-          submitLabel={t('onboarding.phone.verify')}
-          onDone={(res) => {
-            setUser(res.user);
-            setChanging(false);
-          }}
-        />
-      )}
-      <div className="step-actions">
-        <Button variant="ghost" onClick={onBack}>
-          {t('app.back')}
-        </Button>
-        <Button onClick={onNext} disabled={!verified || changing}>
           {t('app.continue')}
         </Button>
       </div>

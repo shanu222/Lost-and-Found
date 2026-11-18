@@ -4,15 +4,12 @@ import { z } from 'zod';
 import { query, tx } from '../db/pool.js';
 import { isSupportedLanguage, textDirFor } from '../data/languages.js';
 import { audit } from '../lib/audit.js';
-import { blindIndex, decrypt, encrypt } from '../lib/crypto.js';
-import { badRequest, conflict, forbidden, notFound } from '../lib/errors.js';
-import { normalizePhone } from '../lib/phone.js';
+import { decrypt } from '../lib/crypto.js';
+import { badRequest, forbidden, notFound } from '../lib/errors.js';
 import { countryCode, latitude, longitude, validate } from '../lib/validate.js';
 import { requireAuth } from '../middleware/auth.js';
-import { otpLimiter } from '../middleware/rateLimit.js';
 import { getCountry } from '../services/countries.js';
 import { isPointInCountry } from '../services/geocode.js';
-import { sendOtp, verifyOtp } from '../services/otp.js';
 import { clearRefreshCookie, revokeAllForUser } from '../services/tokens.js';
 import { deriveSettings, loadUser, nextCountryChangeAt, serializeMe, verifyCityRef } from '../services/users.js';
 import { assertLiveLocation, recordLocation } from '../services/location.js';
@@ -130,44 +127,6 @@ meRouter.post(
 );
 
 // ---------------------------------------------------------------------------
-// Step 3 — phone (only needed for accounts created with Google, or to change
-// the number). The number must belong to the user's country.
-// ---------------------------------------------------------------------------
-const phoneBody = z.object({ phone: z.string().min(4).max(32) });
-
-meRouter.post('/phone/request', otpLimiter, validate({ body: phoneBody }), async (req, res) => {
-  if (!req.countryCode) throw badRequest('COUNTRY_REQUIRED', 'Choose your country first.');
-  const phone = normalizePhone(req.body.phone, req.countryCode);
-  const phoneHash = blindIndex(phone.e164, 'phone');
-  const taken = await query('SELECT id FROM users WHERE phone_hash = $1 AND id <> $2', [phoneHash, req.user.id]);
-  if (taken.rowCount) throw conflict('PHONE_IN_USE', 'This number is already used by another account.');
-  const result = await sendOtp({ e164: phone.e164, purpose: 'verify_phone', userId: req.user.id, language: req.user.language, ip: req.ip });
-  res.json({ sent: true, phone: phone.international, ...result });
-});
-
-meRouter.post(
-  '/phone/verify',
-  validate({ body: phoneBody.extend({ code: z.string().regex(/^\d{6}$/) }) }),
-  async (req, res) => {
-    if (!req.countryCode) throw badRequest('COUNTRY_REQUIRED', 'Choose your country first.');
-    const phone = normalizePhone(req.body.phone, req.countryCode);
-    const { phoneHash } = await verifyOtp({ e164: phone.e164, purpose: 'verify_phone', code: req.body.code, userId: req.user.id });
-    try {
-      await query(
-        `UPDATE users SET phone_enc = $2, phone_hash = $3, phone_last4 = $4, phone_verified_at = now(), updated_at = now()
-         WHERE id = $1`,
-        [req.user.id, encrypt(phone.e164), phoneHash, phone.last4],
-      );
-    } catch (err) {
-      if (err.code === '23505') throw conflict('PHONE_IN_USE', 'This number is already used by another account.');
-      throw err;
-    }
-    await audit({ actorId: req.user.id, countryCode: req.countryCode, action: 'user.phone_verified', ip: req.ip });
-    await reply(req, res);
-  },
-);
-
-// ---------------------------------------------------------------------------
 // Step 4 / Settings — language, display name, units, notifications.
 // The language is NEVER changed automatically; only by this endpoint.
 // ---------------------------------------------------------------------------
@@ -218,7 +177,7 @@ meRouter.post('/onboarding/complete', async (req, res) => {
 // ---------------------------------------------------------------------------
 // Change country (people who moved). Requires explicit confirmation and is
 // limited to once every 30 days. City and home area are reset, and the user
-// must verify a phone number from the new country again.
+// must confirm their live location in the new country again.
 // ---------------------------------------------------------------------------
 meRouter.post(
   '/country',
@@ -245,7 +204,7 @@ meRouter.post(
       await db.query(
         `UPDATE users SET country_code = $2, currency = $3, units = $4, timezone = $5, locale = $6,
                 city_id = NULL, home_lat = NULL, home_lng = NULL,
-                phone_verified_at = NULL, onboarding_completed_at = NULL,
+                onboarding_completed_at = NULL,
                 country_changed_at = now(), travel_country_code = NULL, travel_until = NULL, updated_at = now()
          WHERE id = $1`,
         [u.id, country.code, derived.currency, derived.units, derived.timezone, derived.locale],

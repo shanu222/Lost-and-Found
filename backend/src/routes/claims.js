@@ -187,7 +187,7 @@ export async function listItemClaims(req, res) {
   if (item.finder_id !== req.user.id && !staff) throw forbidden();
   const questions = await query('SELECT id, question, answer_enc FROM hidden_questions WHERE found_item_id = $1 ORDER BY position', [item.id]);
   const { rows } = await query(
-    `SELECT c.*, u.display_name, u.created_at AS member_since, u.returns_count, u.phone_verified_at, u.trust_score,
+    `SELECT c.*, u.display_name, u.created_at AS member_since, u.returns_count, u.email_verified, u.trust_score,
             EXISTS (SELECT 1 FROM identity_checks ic WHERE ic.user_id = u.id AND ic.status = 'approved') AS identity_verified
      FROM claims c JOIN users u ON u.id = c.claimant_id WHERE c.found_item_id = $1 ORDER BY c.created_at`,
     [item.id],
@@ -381,12 +381,12 @@ async function loadHandover(claimId, user) {
 async function handoverView(claimId, user) {
   const { claim, role, h } = await loadHandover(claimId, user);
   const both = Boolean(h.finder_agreed_at && h.owner_agreed_at);
-  const phonesShared = h.finder_shares_phone && h.owner_shares_phone;
-  let phones = null;
-  if (phonesShared) {
-    const { rows } = await query('SELECT id, phone_enc FROM users WHERE id IN ($1,$2)', [h.finder_id, h.owner_id]);
+  // Emails are revealed only when BOTH people opt in.
+  let emails = null;
+  if (h.finder_shares_email && h.owner_shares_email) {
+    const { rows } = await query('SELECT id, email FROM users WHERE id IN ($1,$2)', [h.finder_id, h.owner_id]);
     const other = rows.find((r) => r.id !== user.id);
-    phones = { other: other?.phone_enc ? decrypt(other.phone_enc) : null };
+    emails = { other: other?.email ?? null };
   }
   const item = await query('SELECT current_location, current_location_note, approx_lat, approx_lng FROM found_items WHERE id = $1', [claim.found_item_id]);
   const rating = await query('SELECT stars FROM ratings WHERE handover_id = $1 AND rater_id = $2', [h.id, user.id]);
@@ -412,9 +412,9 @@ async function handoverView(claimId, user) {
     method: h.method,
     place: h.place_name ? { name: h.place_name, lat: h.place_lat, lng: h.place_lng, osmId: h.place_osm_id } : null,
     scheduledFor: h.scheduled_for,
-    sharePhone: role === 'finder' ? h.finder_shares_phone : h.owner_shares_phone,
-    otherSharesPhone: role === 'finder' ? h.owner_shares_phone : h.finder_shares_phone,
-    phones,
+    shareEmail: role === 'finder' ? h.finder_shares_email : h.owner_shares_email,
+    otherSharesEmail: role === 'finder' ? h.owner_shares_email : h.finder_shares_email,
+    emails,
     // Only the OWNER ever receives the code; the finder must get it from them in person.
     code: role === 'claimant' && both && h.code_enc && !h.completed_at ? decrypt(h.code_enc) : null,
     completedAt: h.completed_at,
@@ -452,7 +452,7 @@ claimsRouter.put(
       method: z.enum(['meet', 'courier', 'collect']).optional(),
       place: z.object({ name: z.string().trim().min(2).max(120), lat: latitude, lng: longitude, osmId: z.string().max(40).optional() }).nullable().optional(),
       scheduledFor: z.coerce.date().nullable().optional(),
-      sharePhone: z.boolean().optional(),
+      shareEmail: z.boolean().optional(),
     }),
   }),
   async (req, res) => {
@@ -466,7 +466,7 @@ claimsRouter.put(
         throw badRequest('LOCATION_OUTSIDE_COUNTRY', 'The place must be inside your country.');
       }
     }
-    const phoneCol = role === 'finder' ? 'finder_shares_phone' : 'owner_shares_phone';
+    const shareCol = role === 'finder' ? 'finder_shares_email' : 'owner_shares_email';
     await query(
       `UPDATE handovers SET method = COALESCE($2, method),
          place_name = CASE WHEN $3::boolean THEN $4 ELSE place_name END,
@@ -474,13 +474,13 @@ claimsRouter.put(
          place_lng = CASE WHEN $3::boolean THEN $6 ELSE place_lng END,
          place_osm_id = CASE WHEN $3::boolean THEN $7 ELSE place_osm_id END,
          scheduled_for = CASE WHEN $8::boolean THEN $9 ELSE scheduled_for END,
-         ${phoneCol} = COALESCE($10, ${phoneCol}), reminder_sent_at = CASE WHEN $8::boolean THEN NULL ELSE reminder_sent_at END
+         ${shareCol} = COALESCE($10, ${shareCol}), reminder_sent_at = CASE WHEN $8::boolean THEN NULL ELSE reminder_sent_at END
        WHERE id = $1`,
       [h.id, b.method ?? null, b.place !== undefined, b.place?.name ?? null, b.place?.lat ?? null, b.place?.lng ?? null, b.place?.osmId ?? null,
-        b.scheduledFor !== undefined, b.scheduledFor ?? null, b.sharePhone ?? null],
+        b.scheduledFor !== undefined, b.scheduledFor ?? null, b.shareEmail ?? null],
     );
-    if (b.sharePhone !== undefined) {
-      await audit({ actorId: req.user.id, countryCode: claim.country_code.trim(), action: b.sharePhone ? 'handover.share_phone' : 'handover.unshare_phone', targetType: 'handover', targetId: h.id, ip: req.ip });
+    if (b.shareEmail !== undefined) {
+      await audit({ actorId: req.user.id, countryCode: claim.country_code.trim(), action: b.shareEmail ? 'handover.share_email' : 'handover.unshare_email', targetType: 'handover', targetId: h.id, ip: req.ip });
     }
     const otherId = role === 'finder' ? h.owner_id : h.finder_id;
     if (b.method || b.place || b.scheduledFor) {

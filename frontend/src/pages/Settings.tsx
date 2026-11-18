@@ -83,10 +83,16 @@ export default function Settings() {
             </div>
           </form>
           <div className="settings-row" style={{ marginTop: 8 }}>
-            <span className="settings-row__label">{t('settings.phone')}</span>
+            <span className="settings-row__label">{t('settings.email')}</span>
             <bdi className="settings-row__value" dir="ltr">
-              {user.phone?.masked ?? '—'}
+              {user.email ?? '—'}
             </bdi>
+          </div>
+          <div className="settings-row">
+            <span className="settings-row__label">{t('settings.signInWith')}</span>
+            <span className="settings-row__value">
+              {[user.signInMethods?.google && 'Google', user.signInMethods?.email && t('settings.emailCode')].filter(Boolean).join(' · ') || '—'}
+            </span>
           </div>
         </section>
 

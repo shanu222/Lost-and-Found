@@ -4,7 +4,6 @@ import { env } from '../config/env.js';
 import { query } from '../db/pool.js';
 import { textDirFor } from '../data/languages.js';
 import { badRequest } from '../lib/errors.js';
-import { maskPhone } from '../lib/phone.js';
 import { countrySummary, getCountry } from './countries.js';
 import { settings } from './settings.js';
 
@@ -37,7 +36,7 @@ export function deriveSettings(country, language, browserTimezone) {
 export function trustLevel(user) {
   if (user.returns_count >= 3) return 'trusted_returner';
   if (user.identity_verified) return 'identity_verified';
-  if (user.phone_verified_at) return 'phone_verified';
+  if (user.email_verified) return 'email_verified';
   return 'new';
 }
 
@@ -56,16 +55,14 @@ export async function serializeMe(user) {
   const steps = {
     country: Boolean(user.country_code),
     city: Boolean(user.city_id),
-    phone: Boolean(user.phone_verified_at),
     profile: Boolean(user.display_name),
   };
   return {
     id: user.id,
     displayName: user.display_name,
     email: user.email,
-    phone: user.phone_last4
-      ? { masked: maskPhone(country?.dial_codes?.[0], user.phone_last4), verified: Boolean(user.phone_verified_at) }
-      : null,
+    emailVerified: Boolean(user.email_verified),
+    signInMethods: { email: Boolean(user.email && user.email_verified), google: Boolean(user.google_sub) },
     countryCode: user.country_code?.trim() ?? null,
     country: country ? countrySummary(country) : null,
     city: user.city_id ? { id: Number(user.city_id), name: user.city_name, region: user.city_region, lat: user.city_lat, lng: user.city_lng } : null,
@@ -80,7 +77,7 @@ export async function serializeMe(user) {
     trust: {
       level: trustLevel(user),
       score: user.trust_score,
-      phoneVerified: Boolean(user.phone_verified_at),
+      emailVerified: Boolean(user.email_verified),
       identityVerified: Boolean(user.identity_verified),
     },
     returnsCount: user.returns_count,

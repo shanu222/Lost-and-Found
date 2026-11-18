@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import request from 'supertest';
 import { pool } from '../src/db/pool.js';
 import { invalidateSettings } from '../src/services/settings.js';
-import { TEST_ADMIN, adminSignIn, app, auth, fakeGeocoder, freshPhone, onboardedUser, postFound, shareLocation, signIn } from './helpers.js';
+import { TEST_ADMIN, adminSignIn, app, auth, fakeGeocoder, freshEmail, onboardedUser, postFound, shareLocation, signIn } from './helpers.js';
 
 beforeAll(fakeGeocoder);
 afterAll(async () => {
@@ -14,7 +14,7 @@ afterAll(async () => {
 
 describe('live location', () => {
   it('decides the country from GPS, not from what the user picks', async () => {
-    const s = await signIn(freshPhone('PK'), 'PK');
+    const s = await signIn(freshEmail('PK'), 'PK');
     // Without a location the country step is refused.
     const no = await s.agent.post('/api/me/onboarding/country').set(auth(s.token)).send({ countryCode: 'GB' });
     expect(no.body.error.code).toBe('LOCATION_REQUIRED');
@@ -26,7 +26,7 @@ describe('live location', () => {
   });
 
   it('blocks a VPN: IP country differs from GPS country', async () => {
-    const s = await signIn(freshPhone('PK'), 'PK');
+    const s = await signIn(freshEmail('PK'), 'PK');
     const res = await shareLocation(s, 'PK', { 'cf-ipcountry': 'US' });
     expect(res.status).toBe(403);
     expect(res.body.error.code).toBe('VPN_DETECTED');
@@ -38,7 +38,7 @@ describe('live location', () => {
   });
 
   it('rejects imprecise locations', async () => {
-    const s = await signIn(freshPhone('PK'), 'PK');
+    const s = await signIn(freshEmail('PK'), 'PK');
     const res = await s.agent.post('/api/me/location').set(auth(s.token)).send({ lat: 33.7, lng: 73.05, accuracy: 500000 });
     expect(res.body.error.code).toBe('LOCATION_INACCURATE');
   });
@@ -96,7 +96,7 @@ describe('staff sign-in', () => {
     expect(locked.status).toBe(423);
   });
 
-  it('phone-OTP users cannot use the staff login or the settings API', async () => {
+  it('email-code users cannot use the staff login or the settings API', async () => {
     const u = await onboardedUser('PK');
     await u.agent.get('/api/admin/settings').set(auth(u.token)).expect(403);
   });
@@ -145,9 +145,9 @@ describe('live settings', () => {
   it('closing registration stops new sign-ups only', async () => {
     const a = await adminSignIn();
     await a.agent.patch('/api/admin/settings').set(auth(a.token)).send({ changes: { registration_open: false } }).expect(200);
-    const phone = freshPhone('PK');
-    const sent = await request(app).post('/api/auth/otp/request').send({ phone }).expect(200);
-    const res = await request(app).post('/api/auth/otp/verify').send({ phone, code: sent.body.devCode });
+    const email = freshEmail('PK');
+    const sent = await request(app).post('/api/auth/email/request').send({ email }).expect(200);
+    const res = await request(app).post('/api/auth/email/verify').send({ email, code: sent.body.devCode });
     expect(res.body.error.code).toBe('REGISTRATION_CLOSED');
     await a.agent.patch('/api/admin/settings').set(auth(a.token)).send({ changes: { registration_open: null } }).expect(200);
   });

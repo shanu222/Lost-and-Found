@@ -3,21 +3,20 @@ import { createApp } from '../src/app.js';
 
 export const app = createApp();
 
-/** Signs in with phone OTP and returns { agent, token, user }. */
-export async function signIn(phone, countryCode, language = 'en') {
+/** Signs in with an emailed code and returns { agent, token, user }. */
+export async function signIn(email, _countryCode, language = 'en') {
   const agent = request.agent(app);
-  const sent = await agent.post('/api/auth/otp/request').send({ phone, countryCode, language }).expect(200);
-  const res = await agent.post('/api/auth/otp/verify').send({ phone, countryCode, code: sent.body.devCode, language });
+  const sent = await agent.post('/api/auth/email/request').send({ email, language }).expect(200);
+  const res = await agent.post('/api/auth/email/verify').send({ email, code: sent.body.devCode, language });
   if (res.status >= 300) throw new Error(`sign-in failed: ${res.status} ${JSON.stringify(res.body)}`);
   return { agent, token: res.body.accessToken, user: res.body.user, status: res.status };
 }
 
 export const auth = (token) => ({ Authorization: `Bearer ${token}` });
 
-/** A fresh, valid, random phone number for the given country (no collisions across test files). */
-export function freshPhone(cc) {
-  const d = (n) => Array.from({ length: n }, () => Math.floor(Math.random() * 10)).join('');
-  return { PK: `+92300${d(7)}`, GB: `+4478${d(8)}`, AE: `+97150${d(7)}`, US: `+1212${2 + Math.floor(Math.random() * 7)}${d(6)}` }[cc];
+/** A fresh, random email address (no collisions across test files). */
+export function freshEmail(cc = 'xx') {
+  return `${cc.toLowerCase()}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}@test.foundback.invalid`;
 }
 
 // ---------------------------------------------------------------------------
@@ -46,7 +45,7 @@ export function fakeGeocoder() {
 
 /** A signed-in, fully onboarded user in a country. */
 export async function onboardedUser(cc, name = 'Tester') {
-  const s = await signIn(freshPhone(cc), cc);
+  const s = await signIn(freshEmail(cc), cc);
   const city = await pool.query('SELECT id FROM cities WHERE country_code = $1 ORDER BY population DESC NULLS LAST LIMIT 1', [cc]);
   await pool.query(
     `UPDATE users SET country_code = $2, city_id = $3, display_name = $4, onboarding_completed_at = now(),

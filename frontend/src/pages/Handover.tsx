@@ -235,18 +235,18 @@ function PlanSection({ h, busy, onSave }: { h: H; busy: boolean; onSave: (b: Rec
 
       <label className="settings-row" style={{ cursor: 'pointer' }}>
         <span>
-          <span className="settings-row__label">{t('handover.sharePhone')}</span>
+          <span className="settings-row__label">{t('handover.shareEmail')}</span>
           <br />
-          <span className="settings-row__value">{h.otherSharesPhone ? t('handover.otherShares') : t('handover.otherNotShares')}</span>
+          <span className="settings-row__value">{h.otherSharesEmail ? t('handover.otherShares') : t('handover.otherNotShares')}</span>
         </span>
         <span className="switch">
-          <input type="checkbox" checked={h.sharePhone} disabled={busy} onChange={(e) => onSave({ sharePhone: e.target.checked })} />
+          <input type="checkbox" checked={h.shareEmail} disabled={busy} onChange={(e) => onSave({ shareEmail: e.target.checked })} />
           <span />
         </span>
       </label>
-      {h.phones?.other && (
+      {h.emails?.other && (
         <Alert kind="success">
-          {t('handover.otherPhone')} <a href={`tel:${h.phones.other}`} dir="ltr">{h.phones.other}</a>
+          {t('handover.otherEmail')} <a href={`mailto:${h.emails.other}`} dir="ltr">{h.emails.other}</a>
         </Alert>
       )}
       {h.method === 'courier' && <p className="small muted">{t('handover.courierNote')}</p>}

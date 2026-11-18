@@ -1,4 +1,4 @@
-export type TrustLevel = 'new' | 'phone_verified' | 'identity_verified' | 'trusted_returner';
+export type TrustLevel = 'new' | 'email_verified' | 'identity_verified' | 'trusted_returner';
 
 export interface CountrySummary {
   code: string;
@@ -34,7 +34,8 @@ export interface Me {
   id: string;
   displayName: string | null;
   email: string | null;
-  phone: { masked: string; verified: boolean } | null;
+  emailVerified: boolean;
+  signInMethods: { email: boolean; google: boolean };
   countryCode: string | null;
   country: CountrySummary | null;
   city: City | null;
@@ -46,11 +47,11 @@ export interface Me {
   locale: string | null;
   textDir: 'ltr' | 'rtl';
   role: 'user' | 'moderator' | 'admin';
-  trust: { level: TrustLevel; score: number; phoneVerified: boolean; identityVerified: boolean };
+  trust: { level: TrustLevel; score: number; emailVerified: boolean; identityVerified: boolean };
   returnsCount: number;
   points: number;
   notificationPrefs: { email: boolean; push: boolean; inapp: boolean };
-  onboarding: { completed: boolean; steps: { country: boolean; city: boolean; phone: boolean; profile: boolean } };
+  onboarding: { completed: boolean; steps: { country: boolean; city: boolean; profile: boolean } };
   travel: { countryCode: string; until: string } | null;
   location: { countryCode: string | null; verifiedAt: string | null; fresh: boolean; required: boolean };
   hasPassword: boolean;
@@ -163,9 +164,9 @@ export interface Handover {
   method: 'meet' | 'courier' | 'collect' | null;
   place: { name: string; lat: number; lng: number; osmId?: string } | null;
   scheduledFor: string | null;
-  sharePhone: boolean;
-  otherSharesPhone: boolean;
-  phones: { other: string | null } | null;
+  shareEmail: boolean;
+  otherSharesEmail: boolean;
+  emails: { other: string | null } | null;
   code: string | null;
   completedAt: string | null;
   itemLocation: { current: string; note: string | null; approx: { lat: number; lng: number } };
