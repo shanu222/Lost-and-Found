@@ -1,0 +1,216 @@
+{
+  "app": {
+    "name": "",
+    "tagline": "",
+    "skipToContent": "",
+    "loading": "",
+    "retry": "",
+    "back": "",
+    "continue": "",
+    "save": "",
+    "saved": "",
+    "cancel": "",
+    "close": "",
+    "disclaimer": ""
+  },
+  "nav": {
+    "home": "",
+    "settings": "",
+    "mainNavigation": ""
+  },
+  "header": {
+    "countryButton": "",
+    "countryExplainTitle": "",
+    "countryExplainBody": "",
+    "countryExplainChange": "",
+    "openSettings": "",
+    "language": ""
+  },
+  "language": {
+    "title": "",
+    "suggested": "",
+    "all": "",
+    "search": "",
+    "current": "",
+    "partial": "",
+    "noResults": ""
+  },
+  "signIn": {
+    "title": "",
+    "subtitle": "",
+    "phoneLabel": "",
+    "phoneHint": "",
+    "countryCodeLabel": "",
+    "sendCode": "",
+    "sending": "",
+    "codeLabel": "",
+    "codeSentTo": "",
+    "devCode": "",
+    "verify": "",
+    "verifying": "",
+    "changeNumber": "",
+    "resend": "",
+    "resendIn": "",
+    "or": "",
+    "google": "",
+    "googleUnavailable": "",
+    "terms": "",
+    "points": {
+      "privateTitle": "",
+      "privateBody": "",
+      "proofTitle": "",
+      "proofBody": "",
+      "localTitle": "",
+      "localBody": ""
+    }
+  },
+  "onboarding": {
+    "title": "",
+    "stepOf": "",
+    "steps": {
+      "country": "",
+      "city": "",
+      "phone": "",
+      "language": ""
+    },
+    "country": {
+      "title": "",
+      "body": "",
+      "suggested": "",
+      "search": "",
+      "noResults": "",
+      "selected": ""
+    },
+    "city": {
+      "title": "",
+      "body": "",
+      "search": "",
+      "noResults": "",
+      "popular": "",
+      "homeTitle": "",
+      "homeBody": "",
+      "homeRadius": "",
+      "homeClear": "",
+      "homeSet": "",
+      "useMyLocation": "",
+      "locating": "",
+      "locationDenied": ""
+    },
+    "phone": {
+      "title": "",
+      "body": "",
+      "verified": "",
+      "useDifferent": "",
+      "verify": ""
+    },
+    "language": {
+      "title": "",
+      "body": "",
+      "more": "",
+      "nameLabel": "",
+      "nameHint": "",
+      "finish": ""
+    },
+    "done": ""
+  },
+  "home": {
+    "greeting": "",
+    "returnedCount_one": "",
+    "returnedCount_other": "",
+    "waitingCount_one": "",
+    "waitingCount_other": "",
+    "comingTitle": "",
+    "comingBody": "",
+    "guidanceTitle": "",
+    "guidance": {
+      "ids": "",
+      "documents": "",
+      "cash": ""
+    },
+    "emergency": "",
+    "trustTitle": "",
+    "returnsCount_one": "",
+    "returnsCount_other": "",
+    "points": ""
+  },
+  "trust": {
+    "new": "",
+    "phone_verified": "",
+    "identity_verified": "",
+    "trusted_returner": "",
+    "next": {
+      "new": "",
+      "phone_verified": "",
+      "identity_verified": "",
+      "trusted_returner": ""
+    }
+  },
+  "settings": {
+    "title": "",
+    "profile": "",
+    "displayName": "",
+    "phone": "",
+    "languageAndRegion": "",
+    "language": "",
+    "units": "",
+    "km": "",
+    "mi": "",
+    "timezone": "",
+    "currency": "",
+    "country": "",
+    "city": "",
+    "changeCity": "",
+    "changeCountry": "",
+    "changeCountryTitle": "",
+    "changeCountryBody": "",
+    "changeCountryConfirm": "",
+    "changeCountryCooldown": "",
+    "notifications": "",
+    "notifyInapp": "",
+    "notifyEmail": "",
+    "notifyPush": "",
+    "privacy": "",
+    "privacyBody": "",
+    "download": "",
+    "downloading": "",
+    "delete": "",
+    "deleteTitle": "",
+    "deleteBody": "",
+    "deleteConfirmLabel": "",
+    "deleteConfirm": "",
+    "signOut": ""
+  },
+  "units": {
+    "km": "",
+    "mi": ""
+  },
+  "notFound": {
+    "title": "",
+    "body": "",
+    "home": ""
+  },
+  "errors": {
+    "generic": "",
+    "network": "",
+    "UNAUTHORIZED": "",
+    "RATE_LIMITED": "",
+    "VALIDATION_FAILED": "",
+    "PHONE_INVALID": "",
+    "PHONE_COUNTRY_MISMATCH": "",
+    "PHONE_IN_USE": "",
+    "OTP_INVALID": "",
+    "OTP_EXPIRED": "",
+    "COUNTRY_MISMATCH": "",
+    "COUNTRY_DISABLED": "",
+    "COUNTRY_COOLDOWN": "",
+    "COUNTRY_SAME": "",
+    "CITY_INVALID": "",
+    "LOCATION_OUTSIDE_COUNTRY": "",
+    "GEOCODER_UNAVAILABLE": "",
+    "DISPLAY_NAME_INVALID": "",
+    "ONBOARDING_INCOMPLETE": "",
+    "ACCOUNT_BANNED": "",
+    "ACCOUNT_DELETED": "",
+    "GOOGLE_DISABLED": ""
+  }
+}

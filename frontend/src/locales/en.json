@@ -1,0 +1,216 @@
+{
+  "app": {
+    "name": "FoundBack",
+    "tagline": "Lost something? Found something? Get it back to its owner, safely.",
+    "skipToContent": "Skip to main content",
+    "loading": "Loading…",
+    "retry": "Try again",
+    "back": "Back",
+    "continue": "Continue",
+    "save": "Save",
+    "saved": "Saved",
+    "cancel": "Cancel",
+    "close": "Close",
+    "disclaimer": "FoundBack connects people. Meet only in safe public places."
+  },
+  "nav": {
+    "home": "Home",
+    "settings": "Settings",
+    "mainNavigation": "Main navigation"
+  },
+  "header": {
+    "countryButton": "{{country}}: what you see",
+    "countryExplainTitle": "You're seeing items in {{country}}",
+    "countryExplainBody": "Items, maps, matches, safe places and guidance on FoundBack are limited to your country, so everything you see is nearby and relevant. You can only claim items in {{country}}.",
+    "countryExplainChange": "Moved to another country? You can change it in Settings.",
+    "openSettings": "Open Settings",
+    "language": "Language"
+  },
+  "language": {
+    "title": "Choose your language",
+    "suggested": "Suggested",
+    "all": "All languages",
+    "search": "Search languages",
+    "current": "Current language",
+    "partial": "Partly translated, missing text shows in English",
+    "noResults": "No language matches “{{query}}”."
+  },
+  "signIn": {
+    "title": "Sign in to FoundBack",
+    "subtitle": "Use your phone number. We'll text you a 6-digit code.",
+    "phoneLabel": "Mobile number",
+    "phoneHint": "Enter the number without the country code, or with it.",
+    "countryCodeLabel": "Country code",
+    "sendCode": "Send code",
+    "sending": "Sending…",
+    "codeLabel": "6-digit code",
+    "codeSentTo": "We sent a code to {{phone}}.",
+    "devCode": "Demo mode: your code is {{code}}",
+    "verify": "Sign in",
+    "verifying": "Checking…",
+    "changeNumber": "Change number",
+    "resend": "Send a new code",
+    "resendIn": "You can request a new code in {{seconds}} s",
+    "or": "or",
+    "google": "Continue with Google",
+    "googleUnavailable": "Google sign-in is not set up yet.",
+    "terms": "By continuing you agree to the Terms and the Privacy Policy.",
+    "points": {
+      "privateTitle": "Your details stay private",
+      "privateBody": "Finders and owners never see each other's phone number until both agree.",
+      "proofTitle": "Owners prove it's theirs",
+      "proofBody": "Hidden questions and proof stop anyone else from claiming your things.",
+      "localTitle": "Only your country",
+      "localBody": "You see items, maps and guidance for the country you live in."
+    }
+  },
+  "onboarding": {
+    "title": "Set up your profile",
+    "stepOf": "Step {{current}} of {{total}}",
+    "steps": {
+      "country": "Country",
+      "city": "City",
+      "phone": "Phone",
+      "language": "Language"
+    },
+    "country": {
+      "title": "Which country do you live in?",
+      "body": "You'll see and claim items only in this country. You can change it later if you move.",
+      "suggested": "Suggested for you",
+      "search": "Search countries",
+      "noResults": "No country matches “{{query}}”.",
+      "selected": "{{country}} selected"
+    },
+    "city": {
+      "title": "Which city are you in?",
+      "body": "We use it to show items near you. Only cities in {{country}} are listed.",
+      "search": "Search for your city or town",
+      "noResults": "No place in {{country}} matches “{{query}}”.",
+      "popular": "Popular cities",
+      "homeTitle": "Home area (optional)",
+      "homeBody": "Tap the map to set the area you want “near me” to use. Nobody else can see it.",
+      "homeRadius": "Radius: {{distance}}",
+      "homeClear": "Remove home area",
+      "homeSet": "Home area set",
+      "useMyLocation": "Use my location",
+      "locating": "Finding you…",
+      "locationDenied": "We couldn't get your location. Tap the map instead."
+    },
+    "phone": {
+      "title": "Verify your phone number",
+      "body": "Your number is never shown to other people. It must be a {{country}} number.",
+      "verified": "{{phone}} is verified.",
+      "useDifferent": "Use a different number",
+      "verify": "Verify number"
+    },
+    "language": {
+      "title": "Choose your language",
+      "body": "English is selected. You can switch any time with the globe icon.",
+      "more": "More languages",
+      "nameLabel": "What should we call you?",
+      "nameHint": "Shown to people you exchange items with. No phone numbers or emails.",
+      "finish": "Finish setup"
+    },
+    "done": "You're all set"
+  },
+  "home": {
+    "greeting": "Hi {{name}}",
+    "returnedCount_one": "{{count}} item returned to its owner in {{country}}",
+    "returnedCount_other": "{{count}} items returned to their owners in {{country}}",
+    "waitingCount_one": "{{count}} found item is waiting for its owner",
+    "waitingCount_other": "{{count}} found items are waiting for their owners",
+    "comingTitle": "Posting and searching open in the next update",
+    "comingBody": "Your profile is ready. As soon as posting opens, you'll be able to report what you found or lost in {{country}}.",
+    "guidanceTitle": "If you find something in {{country}}",
+    "guidance": {
+      "ids": "IDs and passports",
+      "documents": "Documents",
+      "cash": "Cash"
+    },
+    "emergency": "Emergency number: {{number}}",
+    "trustTitle": "Your trust level",
+    "returnsCount_one": "{{count}} item returned",
+    "returnsCount_other": "{{count}} items returned",
+    "points": "{{count}} points"
+  },
+  "trust": {
+    "new": "New member",
+    "phone_verified": "Phone verified",
+    "identity_verified": "Identity verified",
+    "trusted_returner": "Trusted returner",
+    "next": {
+      "new": "Verify your phone number to start posting and claiming.",
+      "phone_verified": "Return items to become a Trusted returner.",
+      "identity_verified": "Return items to become a Trusted returner.",
+      "trusted_returner": "Thank you for helping people get their things back."
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "profile": "Profile",
+    "displayName": "Display name",
+    "phone": "Phone number",
+    "languageAndRegion": "Language and region",
+    "language": "Language",
+    "units": "Distance units",
+    "km": "Kilometres",
+    "mi": "Miles",
+    "timezone": "Time zone",
+    "currency": "Currency",
+    "country": "Country",
+    "city": "City",
+    "changeCity": "Change city",
+    "changeCountry": "Change country",
+    "changeCountryTitle": "Change your country",
+    "changeCountryBody": "Only change this if you have moved. You'll see items in the new country only, you'll need to set your city and verify a phone number from that country again, and you can't change it again for 30 days.",
+    "changeCountryConfirm": "Move to {{country}}",
+    "changeCountryCooldown": "You can change your country again on {{date}}.",
+    "notifications": "Notifications",
+    "notifyInapp": "In-app notifications",
+    "notifyEmail": "Email",
+    "notifyPush": "Push notifications",
+    "privacy": "Privacy and data",
+    "privacyBody": "We keep only what's needed to return items. Phone numbers, ID numbers and hidden answers are encrypted.",
+    "download": "Download my data",
+    "downloading": "Preparing…",
+    "delete": "Delete account",
+    "deleteTitle": "Delete your account?",
+    "deleteBody": "Your profile, phone number and open posts are removed. This can't be undone. Type DELETE to confirm.",
+    "deleteConfirmLabel": "Type DELETE",
+    "deleteConfirm": "Delete my account",
+    "signOut": "Sign out"
+  },
+  "units": {
+    "km": "{{value}} km",
+    "mi": "{{value}} mi"
+  },
+  "notFound": {
+    "title": "This page doesn't exist",
+    "body": "The link may be old or mistyped.",
+    "home": "Go to Home"
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "network": "You seem to be offline. Check your connection and try again.",
+    "UNAUTHORIZED": "Please sign in again.",
+    "RATE_LIMITED": "Too many attempts. Please wait a few minutes and try again.",
+    "VALIDATION_FAILED": "Some fields are not valid. Please check and try again.",
+    "PHONE_INVALID": "That phone number doesn't look right.",
+    "PHONE_COUNTRY_MISMATCH": "Please use a phone number from your country.",
+    "PHONE_IN_USE": "This number is already used by another account.",
+    "OTP_INVALID": "That code isn't correct.",
+    "OTP_EXPIRED": "This code has expired. Request a new one.",
+    "COUNTRY_MISMATCH": "That place is not in your country.",
+    "COUNTRY_DISABLED": "FoundBack isn't available in this country yet.",
+    "COUNTRY_COOLDOWN": "You can only change your country once every 30 days.",
+    "COUNTRY_SAME": "That is already your country.",
+    "CITY_INVALID": "Please pick a city from the list.",
+    "LOCATION_OUTSIDE_COUNTRY": "That point is outside your country. Pick a spot inside it.",
+    "GEOCODER_UNAVAILABLE": "Place search is temporarily unavailable. Try again shortly.",
+    "DISPLAY_NAME_INVALID": "Your name can't contain phone numbers, emails or links.",
+    "ONBOARDING_INCOMPLETE": "A few profile steps are still missing.",
+    "ACCOUNT_BANNED": "This account has been suspended.",
+    "ACCOUNT_DELETED": "This account was deleted.",
+    "GOOGLE_DISABLED": "Google sign-in is not set up yet."
+  }
+}
