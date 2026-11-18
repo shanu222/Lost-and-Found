@@ -2,7 +2,6 @@
 import { Router } from 'express';
 import { OAuth2Client } from 'google-auth-library';
 import { z } from 'zod';
-import { env } from '../config/env.js';
 import { query } from '../db/pool.js';
 import { isSupportedLanguage, textDirFor } from '../data/languages.js';
 import { audit } from '../lib/audit.js';
@@ -21,6 +20,7 @@ import {
   setRefreshCookie,
 } from '../services/tokens.js';
 import { loadUser, serializeMe } from '../services/users.js';
+import { settings } from '../services/settings.js';
 
 export const authRouter = Router();
 const google = new OAuth2Client();
@@ -71,6 +71,7 @@ authRouter.post(
     let created = false;
     if (existing.rows[0]?.status === 'deleted') throw forbidden('ACCOUNT_DELETED', 'This account was deleted.');
     if (!userId) {
+      if (!(await settings()).registration_open) throw forbidden('REGISTRATION_CLOSED', 'New sign-ups are paused. Please try again later.');
       const { rows } = await query(
         `INSERT INTO users (phone_enc, phone_hash, phone_last4, phone_verified_at, language, text_dir)
          VALUES ($1,$2,$3,now(),$4,$5) RETURNING id`,
@@ -90,10 +91,11 @@ authRouter.post(
   authLimiter,
   validate({ body: z.object({ idToken: z.string().min(20), language }) }),
   async (req, res) => {
-    if (!env.GOOGLE_CLIENT_ID) throw badRequest('GOOGLE_DISABLED', 'Google sign-in is not configured.');
+    const s = await settings();
+    if (!s.google_signin_enabled || !s.google_client_id) throw badRequest('GOOGLE_DISABLED', 'Google sign-in is not configured.');
     let payload;
     try {
-      const ticket = await google.verifyIdToken({ idToken: req.body.idToken, audience: env.GOOGLE_CLIENT_ID });
+      const ticket = await google.verifyIdToken({ idToken: req.body.idToken, audience: s.google_client_id });
       payload = ticket.getPayload();
     } catch {
       throw unauthorized('Google sign-in failed. Please try again.');
@@ -105,6 +107,7 @@ authRouter.post(
     if (existing.rows[0]?.status === 'deleted') throw forbidden('ACCOUNT_DELETED', 'This account was deleted.');
     let created = false;
     if (!userId) {
+      if (!s.registration_open) throw forbidden('REGISTRATION_CLOSED', 'New sign-ups are paused. Please try again later.');
       // We do NOT auto-link to an existing account by email (account takeover risk).
       const email = payload.email_verified ? payload.email : null;
       const emailTaken = email ? (await query('SELECT 1 FROM users WHERE email = $1', [email])).rowCount > 0 : false;

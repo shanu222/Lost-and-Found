@@ -38,7 +38,7 @@ miscRouter.post('/notifications/read', ...authed, validate({ body: z.object({ id
   res.status(204).end();
 });
 
-miscRouter.get('/push/key', (_req, res) => res.json({ publicKey: vapidPublicKey() }));
+miscRouter.get('/push/key', async (_req, res) => res.json({ publicKey: await vapidPublicKey() }));
 
 miscRouter.post(
   '/push/subscribe',
@@ -110,7 +110,7 @@ miscRouter.post('/me/identity', ...authed, upload.any(), async (req, res) => {
   if (!selfie) throw badRequest('PROOF_REQUIRED', 'A selfie holding your ID is required.', { missing: ['selfie'] });
   const pending = await query("SELECT 1 FROM identity_checks WHERE user_id = $1 AND status IN ('pending','approved')", [req.user.id]);
   if (pending.rowCount) throw conflict('IDENTITY_EXISTS', 'Your identity check is already submitted or approved.');
-  const img = await storeImage(selfie.buffer, req.countryCode, { blurFaces: false });
+  const img = await storeImage(selfie.buffer, req.countryCode, { moderateImage: false });
   await query(
     'INSERT INTO identity_checks (user_id, country_code, id_number_enc, id_number_hash, selfie_key) VALUES ($1,$2,$3,$4,$5)',
     [req.user.id, req.countryCode, encrypt(b.idNumber), blindIndex(b.idNumber, 'identity'), img.key],
@@ -134,7 +134,7 @@ miscRouter.get('/stories', ...authed, async (req, res) => {
 });
 
 // ---- Translation of posts and messages -------------------------------------
-miscRouter.get('/translate/status', (_req, res) => res.json({ enabled: translationEnabled() }));
+miscRouter.get('/translate/status', async (_req, res) => res.json({ enabled: await translationEnabled() }));
 
 miscRouter.post(
   '/translate',

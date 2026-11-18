@@ -15,6 +15,8 @@ import { isPointInCountry } from '../services/geocode.js';
 import { sendOtp, verifyOtp } from '../services/otp.js';
 import { clearRefreshCookie, revokeAllForUser } from '../services/tokens.js';
 import { deriveSettings, loadUser, nextCountryChangeAt, serializeMe, verifyCityRef } from '../services/users.js';
+import { assertLiveLocation, recordLocation } from '../services/location.js';
+import { settings } from '../services/settings.js';
 
 export const meRouter = Router();
 meRouter.use(requireAuth);
@@ -31,17 +33,38 @@ async function requireEnabledCountry(code) {
 meRouter.get('/', reply);
 
 // ---------------------------------------------------------------------------
+// Live location check (GPS). Decides the user's country; VPN-checked.
+// ---------------------------------------------------------------------------
+meRouter.post(
+  '/location',
+  validate({ body: z.object({ lat: latitude, lng: longitude, accuracy: z.coerce.number().min(0).max(1_000_000).optional() }) }),
+  async (req, res) => {
+    const countryCode = await recordLocation(req, req.body);
+    const user = await loadUser(req.user.id);
+    res.json({ countryCode, user: await serializeMe(user) });
+  },
+);
+
+// ---------------------------------------------------------------------------
 // Onboarding step 1 — country. Only while onboarding; afterwards changing
 // country goes through POST /me/country (cooldown + confirmation).
 // ---------------------------------------------------------------------------
 meRouter.post(
   '/onboarding/country',
-  validate({ body: z.object({ countryCode, timezone: z.string().max(64).optional() }) }),
+  validate({ body: z.object({ countryCode: countryCode.optional(), timezone: z.string().max(64).optional() }) }),
   async (req, res) => {
     if (req.user.onboarding_completed_at) {
       throw forbidden('ONBOARDING_DONE', 'Use Settings to change your country.');
     }
-    const country = await requireEnabledCountry(req.body.countryCode);
+    // With live location on (default), the country is the one the GPS says the
+    // user is in — it can't be picked by hand or faked with a VPN.
+    let code = req.body.countryCode;
+    if ((await settings()).require_live_location) {
+      await assertLiveLocation(req.user, []);
+      code = req.user.location_country.trim();
+    }
+    if (!code) throw badRequest('COUNTRY_REQUIRED', 'Choose your country first.');
+    const country = await requireEnabledCountry(code);
     const s = deriveSettings(country, req.user.language, req.body.timezone);
     const changed = req.countryCode && req.countryCode !== country.code;
     await query(
@@ -199,17 +222,25 @@ meRouter.post('/onboarding/complete', async (req, res) => {
 // ---------------------------------------------------------------------------
 meRouter.post(
   '/country',
-  validate({ body: z.object({ countryCode, confirm: z.literal(true), timezone: z.string().max(64).optional() }) }),
+  validate({ body: z.object({ countryCode: countryCode.optional(), confirm: z.literal(true), timezone: z.string().max(64).optional() }) }),
   async (req, res) => {
     const u = req.user;
+    const s = await settings();
     if (!u.onboarding_completed_at) throw badRequest('ONBOARDING_REQUIRED', 'Finish onboarding first.');
-    const country = await requireEnabledCountry(req.body.countryCode);
+    let code = req.body.countryCode;
+    if (s.require_live_location) {
+      // You can only move your account to the country you are physically in.
+      await assertLiveLocation(u, []);
+      code = u.location_country.trim();
+    }
+    if (!code) throw badRequest('COUNTRY_REQUIRED', 'Choose your country first.');
+    const country = await requireEnabledCountry(code);
     if (country.code === req.countryCode) throw badRequest('COUNTRY_SAME', 'That is already your country.');
-    const next = nextCountryChangeAt(u);
+    const next = nextCountryChangeAt(u, s.country_change_cooldown_days);
     if (next && next > new Date()) {
       throw forbidden('COUNTRY_COOLDOWN', 'You can change your country once every 30 days.', { nextChangeAt: next });
     }
-    const s = deriveSettings(country, u.language, req.body.timezone);
+    const derived = deriveSettings(country, u.language, req.body.timezone);
     await tx(async (db) => {
       await db.query(
         `UPDATE users SET country_code = $2, currency = $3, units = $4, timezone = $5, locale = $6,
@@ -217,7 +248,7 @@ meRouter.post(
                 phone_verified_at = NULL, onboarding_completed_at = NULL,
                 country_changed_at = now(), travel_country_code = NULL, travel_until = NULL, updated_at = now()
          WHERE id = $1`,
-        [u.id, country.code, s.currency, s.units, s.timezone, s.locale],
+        [u.id, country.code, derived.currency, derived.units, derived.timezone, derived.locale],
       );
       await audit({ actorId: u.id, countryCode: country.code, action: 'user.country_change', meta: { from: req.countryCode, to: country.code }, ip: req.ip }, db);
     });

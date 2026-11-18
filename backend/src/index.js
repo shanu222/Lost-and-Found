@@ -5,8 +5,10 @@ import { pool } from './db/pool.js';
 import { createApp } from './app.js';
 import { logger } from './lib/logger.js';
 import { startJobs } from './jobs.js';
+import { bootstrapAdmin } from './routes/adminAuth.js';
 
 await migrate({ log: logger });
+await bootstrapAdmin(logger);
 if (env.JOBS_ENABLED) startJobs();
 const server = createApp().listen(env.PORT, () => logger.info(`FoundBack API listening on :${env.PORT}`));
 

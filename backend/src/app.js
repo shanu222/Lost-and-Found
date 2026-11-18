@@ -20,6 +20,8 @@ import { adminRouter } from './routes/admin.js';
 import { miscRouter } from './routes/misc.js';
 import { requireAuth, requireOnboarded } from './middleware/auth.js';
 import { upload } from './lib/upload.js';
+import { adminAuthRouter } from './routes/adminAuth.js';
+import { maintenanceGate } from './middleware/maintenance.js';
 
 export function createApp() {
   const app = express();
@@ -58,6 +60,8 @@ export function createApp() {
   });
 
   app.use('/api', apiLimiter);
+  app.use('/api', maintenanceGate);
+  app.use('/api/auth/admin', adminAuthRouter);
   app.use('/api/auth', authRouter);
   app.use('/api/me/travel', travelRouter);
   app.use('/api/me', meRouter);

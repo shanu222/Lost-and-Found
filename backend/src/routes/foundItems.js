@@ -17,11 +17,12 @@ import { storeImage } from '../services/images.js';
 import { distanceSql, loadVisibleItem, serializeItems, viewableCountries } from '../services/items.js';
 import { matchFoundItem } from '../services/matching.js';
 import { deleteObject } from '../services/storage.js';
+import { assertLiveLocation } from '../services/location.js';
+import { settings } from '../services/settings.js';
 
 export const foundItemsRouter = Router();
 foundItemsRouter.use(requireAuth, requireOnboarded);
 
-const MAX_POSTS_PER_DAY = 10;
 
 const createSchema = z.object({
   category: z.enum(CATEGORIES),
@@ -52,6 +53,7 @@ function assertCleanPublicText(text, country, field) {
 foundItemsRouter.post('/', upload.any(), async (req, res) => {
   const b = multipartData(req, createSchema);
   const user = req.user;
+  await assertLiveLocation(user, req.countryCode);
   const country = await getCountry(req.countryCode);
   const photos = filesOf(req, 'photos');
   if (photos.length < 1 || photos.length > 5) throw badRequest('PHOTOS_REQUIRED', 'Add between 1 and 5 photos.');
@@ -67,7 +69,7 @@ foundItemsRouter.post('/', upload.any(), async (req, res) => {
     "SELECT count(*)::int AS n FROM found_items WHERE finder_id = $1 AND created_at > now() - interval '1 day'",
     [user.id],
   );
-  if (counts[0].n >= MAX_POSTS_PER_DAY) throw tooMany('You have reached the daily posting limit.');
+  if (counts[0].n >= (await settings()).max_posts_per_day) throw tooMany('You have reached the daily posting limit.');
   if (!(await isPointInCountry(b.location.lat, b.location.lng, country))) {
     throw badRequest('LOCATION_OUTSIDE_COUNTRY', `The pin must be inside ${country.name}.`);
   }
@@ -75,7 +77,7 @@ foundItemsRouter.post('/', upload.any(), async (req, res) => {
   // Images first (outside the transaction: they can take a few seconds).
   const isPublic = !PRIVATE_PHOTO_CATEGORIES.has(b.category);
   const stored = [];
-  for (const f of photos) stored.push(await storeImage(f.buffer, req.countryCode, { blurFaces: isPublic }));
+  for (const f of photos) stored.push(await storeImage(f.buffer, req.countryCode, { moderateImage: isPublic }));
 
   const approx = approximate(b.location.lat, b.location.lng, 500);
   const item = await tx(async (db) => {

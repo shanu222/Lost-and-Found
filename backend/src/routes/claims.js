@@ -22,12 +22,14 @@ import { notify } from '../services/notifications.js';
 import { signedUrl } from '../services/storage.js';
 import { trustLevel } from '../services/users.js';
 import { canClaim } from './foundItems.js';
+import { assertLiveLocation } from '../services/location.js';
+import { settings } from '../services/settings.js';
 
 export const claimsRouter = Router();
 claimsRouter.use(requireAuth, requireOnboarded);
 
-export const MAX_CLAIMS_PER_DAY = 3;
-const CLAIM_TTL = "interval '7 days'";
+// Claim expiry (days) is a live setting; interpolated as a validated integer.
+const claimTtl = async () => `make_interval(days => ${Math.round((await settings()).claim_expiry_days)})`;
 const uuidParam = validate({ params: z.object({ id: z.string().uuid() }) });
 
 // ---------------------------------------------------------------------------
@@ -50,7 +52,10 @@ export async function createClaim(req, res) {
   const user = req.user;
   const item = await loadVisibleItem(req.params.id, user);
   if (!canClaim(item, user)) throw forbidden('CANNOT_CLAIM', 'You cannot claim this item.');
+  await assertLiveLocation(user, [user.country_code, user.travel_country_code].filter(Boolean));
   const b = multipartData(req, claimSchema);
+  const CLAIM_TTL = await claimTtl();
+  const maxClaims = (await settings()).max_claims_per_day;
   const proofImages = filesOf(req, 'proofImages').slice(0, 5);
   const selfie = filesOf(req, 'selfie')[0];
 
@@ -62,7 +67,7 @@ export async function createClaim(req, res) {
   if (forItem.rows.some((c) => c.status === 'rejected')) throw forbidden('CLAIM_REJECTED_BEFORE', 'Your earlier claim for this item was rejected.');
   if (forItem.rows.some((c) => ['pending', 'follow_up', 'approved'].includes(c.status))) throw conflict('CLAIM_EXISTS', 'You already have a claim for this item.');
   const today = history.rows.filter((c) => new Date(c.created_at) > new Date(Date.now() - 864e5)).length;
-  if (today >= MAX_CLAIMS_PER_DAY) throw tooMany('You can make up to 3 claims per day.');
+  if (today >= maxClaims) throw tooMany(`You can make up to ${maxClaims} claims per day.`);
 
   // Every hidden question must be answered.
   const qs = await query('SELECT id FROM hidden_questions WHERE found_item_id = $1', [item.id]);
@@ -94,8 +99,8 @@ export async function createClaim(req, res) {
   if (week >= 5) flags.push('many_claims');
 
   const stored = [];
-  for (const f of proofImages) stored.push({ kind: 'photo', ...(await storeImage(f.buffer, item.country_code.trim(), { blurFaces: false })) });
-  if (selfie) stored.push({ kind: 'selfie', ...(await storeImage(selfie.buffer, item.country_code.trim(), { blurFaces: false })) });
+  for (const f of proofImages) stored.push({ kind: 'photo', ...(await storeImage(f.buffer, item.country_code.trim(), { moderateImage: false })) });
+  if (selfie) stored.push({ kind: 'selfie', ...(await storeImage(selfie.buffer, item.country_code.trim(), { moderateImage: false })) });
 
   const claim = await tx(async (db) => {
     const { rows } = await db.query(
@@ -237,6 +242,7 @@ claimsRouter.post(
     if (!['pending', 'follow_up'].includes(claim.status)) throw badRequest('CLAIM_CLOSED', 'This claim is no longer open.');
     const cc = claim.country_code.trim();
     const b = req.body;
+    const CLAIM_TTL = await claimTtl();
 
     if (b.action === 'approve') {
       const others = await tx(async (db) => {
@@ -294,6 +300,7 @@ claimsRouter.post(
     const { claim, role } = await requireParty(req.validParams.id, req.user);
     if (role !== 'claimant') throw forbidden();
     if (claim.status !== 'follow_up') throw badRequest('CLAIM_CLOSED', 'There is no open question.');
+    const CLAIM_TTL = await claimTtl();
     await query(
       `UPDATE claims SET status = 'pending', follow_up_answer_enc = $2, expires_at = now() + ${CLAIM_TTL}, updated_at = now() WHERE id = $1`,
       [claim.id, encrypt(req.body.answer)],

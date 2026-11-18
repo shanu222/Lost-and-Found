@@ -4,11 +4,10 @@
 import * as webpush from 'web-push';
 import { env } from '../config/env.js';
 import { query } from '../db/pool.js';
+import { settings } from './settings.js';
 import { logger } from '../lib/logger.js';
 import { sendEmail } from './email.js';
 
-const pushEnabled = Boolean(env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY);
-if (pushEnabled) webpush.setVapidDetails(env.VAPID_SUBJECT, env.VAPID_PUBLIC_KEY, env.VAPID_PRIVATE_KEY);
 
 const CATEGORY = {
   en: { phone: 'phone', wallet: 'wallet', national_id: 'ID card', bank_cards: 'bank card', documents: 'documents', keys: 'keys', bag: 'bag', jewellery: 'jewellery', watch: 'watch', laptop: 'laptop', vehicle_documents: 'vehicle documents', pets: 'pet', childrens_items: "child's item", cash: 'cash', other: 'item' },
@@ -129,13 +128,15 @@ async function deliver(id, userId, type, data) {
       await query('UPDATE notifications SET emailed_at = now() WHERE id = $1', [id]);
     }
 
-    if (pushEnabled && u.notification_prefs?.push !== false) {
+    const s = await settings();
+    const vapidDetails = { subject: s.vapid_subject, publicKey: s.vapid_public_key, privateKey: s.vapid_private_key };
+    if (s.push_enabled && s.vapid_public_key && s.vapid_private_key && u.notification_prefs?.push !== false) {
       const subs = await query('SELECT id, endpoint, keys FROM push_subscriptions WHERE user_id = $1', [userId]);
-      for (const s of subs.rows) {
+      for (const sub of subs.rows) {
         try {
-          await webpush.sendNotification({ endpoint: s.endpoint, keys: s.keys }, JSON.stringify({ title, body, url: data.url ?? '/' }), { TTL: 3600 });
+          await webpush.sendNotification({ endpoint: sub.endpoint, keys: sub.keys }, JSON.stringify({ title, body, url: data.url ?? '/' }), { TTL: 3600, vapidDetails });
         } catch (err) {
-          if (err.statusCode === 404 || err.statusCode === 410) await query('DELETE FROM push_subscriptions WHERE id = $1', [s.id]);
+          if (err.statusCode === 404 || err.statusCode === 410) await query('DELETE FROM push_subscriptions WHERE id = $1', [sub.id]);
         }
       }
       if (subs.rowCount) await query('UPDATE notifications SET pushed_at = now() WHERE id = $1', [id]);
@@ -147,4 +148,4 @@ async function deliver(id, userId, type, data) {
 
 const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
-export const vapidPublicKey = () => env.VAPID_PUBLIC_KEY || null;
+export const vapidPublicKey = async () => (await settings()).vapid_public_key || null;

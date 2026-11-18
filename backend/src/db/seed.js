@@ -89,6 +89,10 @@ const ITEMS = [
 ];
 
 export async function seed() {
+  // Demo data must never reach a real deployment by accident.
+  if (process.env.NODE_ENV === 'production' && !process.argv.includes('--force')) {
+    throw new Error('Refusing to seed demo data in production. Run `npm run seed -- --force` if you really want demo data.');
+  }
   await migrate({ log: { info: () => {} } });
   await tx(async (db) => {
     for (const [cc, bbox] of Object.entries(BBOX)) {

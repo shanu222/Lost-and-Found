@@ -7,7 +7,7 @@ import { env, isProd } from '../config/env.js';
 import { query } from '../db/pool.js';
 import { blindIndex, randomDigits, safeEqual } from '../lib/crypto.js';
 import { badRequest, tooMany } from '../lib/errors.js';
-import { sms, otpMessage } from './sms/index.js';
+import { otpMessage, sendSms } from './sms/index.js';
 
 const TTL_MS = 5 * 60 * 1000;
 const MAX_ATTEMPTS = 5;
@@ -30,11 +30,11 @@ export async function sendOtp({ e164, purpose, userId = null, language = 'en', i
      VALUES ($1,$2,$3,$4,$5,$6)`,
     [phoneHash, purpose, codeHash(phoneHash, code), userId, new Date(Date.now() + TTL_MS), ip],
   );
-  await sms.send({ to: e164, body: otpMessage(code, language) });
+  const provider = await sendSms({ to: e164, body: otpMessage(code, language) });
 
   // Demo convenience: echo the code in the API response. Only with the dev
   // SMS provider and only when explicitly enabled outside production.
-  const echo = sms.name === 'dev' && env.OTP_DEV_ECHO && !isProd;
+  const echo = provider === 'dev' && env.OTP_DEV_ECHO && !isProd;
   return { expiresIn: TTL_MS / 1000, ...(echo ? { devCode: code } : {}) };
 }
 

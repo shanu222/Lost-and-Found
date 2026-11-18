@@ -14,12 +14,10 @@ export async function signIn(phone, countryCode, language = 'en') {
 
 export const auth = (token) => ({ Authorization: `Bearer ${token}` });
 
-let counter = 0;
-/** A fresh, valid, unique phone number for the given country. */
+/** A fresh, valid, random phone number for the given country (no collisions across test files). */
 export function freshPhone(cc) {
-  counter += 1;
-  const n = String(1000000 + counter * 37 + Math.floor(Math.random() * 30)).slice(-7);
-  return { PK: `+92300${n}`, GB: `+447700${n.slice(-6)}`, AE: `+97150${n}`, US: `+1212555${n.slice(-4)}` }[cc];
+  const d = (n) => Array.from({ length: n }, () => Math.floor(Math.random() * 10)).join('');
+  return { PK: `+92300${d(7)}`, GB: `+4478${d(8)}`, AE: `+97150${d(7)}`, US: `+1212${2 + Math.floor(Math.random() * 7)}${d(6)}` }[cc];
 }
 
 // ---------------------------------------------------------------------------
@@ -35,6 +33,10 @@ const BOXES = { PK: [23.6, 60.8, 37.1, 77.9], GB: [49.8, -8.7, 60.9, 1.8], AE: [
 export function fakeGeocoder() {
   setGeocoderFetch(async (url) => {
     const u = new URL(url);
+    if (u.pathname === '/search') {
+      const cc = u.searchParams.get('countrycodes');
+      return { ok: true, json: async () => [{ name: 'Murree', lat: '33.9070', lon: '73.3943', osm_type: 'relation', osm_id: 1, address: { country_code: cc, state: 'Punjab' } }] };
+    }
     const lat = Number(u.searchParams.get('lat'));
     const lng = Number(u.searchParams.get('lon'));
     const cc = Object.entries(BOXES).find(([, b]) => lat >= b[0] && lat <= b[2] && lng >= b[1] && lng <= b[3])?.[0];
@@ -48,6 +50,7 @@ export async function onboardedUser(cc, name = 'Tester') {
   const city = await pool.query('SELECT id FROM cities WHERE country_code = $1 ORDER BY population DESC NULLS LAST LIMIT 1', [cc]);
   await pool.query(
     `UPDATE users SET country_code = $2, city_id = $3, display_name = $4, onboarding_completed_at = now(),
+       location_country = $2, location_verified_at = now(), location_lat = 0.5, location_lng = 0.5,
        currency = (SELECT currency FROM countries WHERE code = $2), created_at = now() - interval '10 days' WHERE id = $1`,
     [s.user.id, cc, city.rows[0].id, name],
   );
@@ -87,4 +90,22 @@ export async function postFound(s, cc, overrides = {}, photos = 1) {
   let req = s.agent.post('/api/found-items').set(auth(s.token)).field('data', JSON.stringify(data));
   for (let i = 0; i < photos; i++) req = req.attach('photos', await testJpeg(), `p${i}.jpg`);
   return req;
+}
+
+/** Share a live GPS location from inside a country (as the browser would). */
+export const shareLocation = (s, cc, headers = {}) =>
+  s.agent.post('/api/me/location').set(auth(s.token)).set(headers).send({ ...PLACES[cc], accuracy: 30 });
+
+// Test-only staff account (see test/env.js) — never a real credential.
+export const TEST_ADMIN = { email: process.env.ADMIN_EMAIL, password: process.env.ADMIN_INITIAL_PASSWORD };
+
+/** Full staff sign-in (password + emailed code) → { agent, token }. */
+export async function adminSignIn() {
+  const agent = request.agent(app);
+  const first = await agent.post('/api/auth/admin/login').send(TEST_ADMIN);
+  if (first.status !== 200) throw new Error(`admin login failed ${first.status} ${JSON.stringify(first.body)}`);
+  const res = first.body.twoFactor
+    ? await agent.post('/api/auth/admin/verify').send({ ticket: first.body.ticket, code: first.body.devCode })
+    : first;
+  return { agent, token: res.body.accessToken, user: res.body.user };
 }

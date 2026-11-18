@@ -1,18 +1,24 @@
-// Transactional email through Resend. Without RESEND_API_KEY emails are only
-// logged (development). Templates are rendered in the recipient's language by
-// the caller (later stages: notifications).
+// Transactional email through Resend. Key and sender come from live settings
+// (Admin → Settings → Email), falling back to RESEND_API_KEY / EMAIL_FROM.
+// Without a key, emails are only logged (development).
 import { Resend } from 'resend';
-import { env } from '../config/env.js';
 import { logger } from '../lib/logger.js';
+import { settings } from './settings.js';
 
-const client = env.RESEND_API_KEY ? new Resend(env.RESEND_API_KEY) : null;
+let client = null;
+let clientKey = null;
 
 export async function sendEmail({ to, subject, html, text }) {
-  if (!client) {
-    logger.info({ to, subject }, '[email:dev] email not sent (RESEND_API_KEY missing)');
+  const s = await settings();
+  if (!s.resend_api_key) {
+    logger.info({ to, subject }, '[email:dev] email not sent (no Resend key)');
     return { id: 'dev' };
   }
-  const { data, error } = await client.emails.send({ from: env.EMAIL_FROM, to, subject, html, text });
+  if (clientKey !== s.resend_api_key) {
+    client = new Resend(s.resend_api_key);
+    clientKey = s.resend_api_key;
+  }
+  const { data, error } = await client.emails.send({ from: s.email_from, to, subject, html, text });
   if (error) throw new Error(`Resend error: ${error.message}`);
   return data;
 }

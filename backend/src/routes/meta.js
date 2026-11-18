@@ -10,8 +10,19 @@ import { geocodeLimiter } from '../middleware/rateLimit.js';
 import { countryConfig, countrySummary, getCountry, listCountries } from '../services/countries.js';
 import { searchPlaces } from '../services/geocode.js';
 import { signCityRef } from '../services/users.js';
+import { publicConfig } from '../services/settings.js';
 
 export const metaRouter = Router();
+
+/**
+ * Live configuration for the web app and the installed (PWA / future native)
+ * app: maintenance mode, announcement, feature switches, limits, public keys.
+ * Changed from Admin → Settings; clients refresh it every few minutes.
+ */
+metaRouter.get('/app-config', async (_req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.json({ config: await publicConfig(), serverTime: new Date().toISOString() });
+});
 
 metaRouter.get('/languages', (_req, res) => {
   res.set('Cache-Control', 'public, max-age=3600');

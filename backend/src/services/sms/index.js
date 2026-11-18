@@ -1,43 +1,46 @@
-// Pluggable SMS provider. Select with SMS_PROVIDER:
-//   dev    — logs the message to the console (local development / demos)
-//   twilio — Twilio REST API (no SDK needed)
-// To add a provider, implement `send({ to, body })` and register it below.
-import { env } from '../../config/env.js';
+// Pluggable SMS provider, chosen live in Admin → Settings (sms_provider):
+//   dev    — logs the code to the API logs (development / demos)
+//   twilio — Twilio REST API
 import { logger } from '../../lib/logger.js';
+import { settings } from '../settings.js';
 
 const devProvider = {
   name: 'dev',
-  /** Last messages per number; used by tests and by the optional OTP_DEV_ECHO. */
   outbox: [],
   async send({ to, body }) {
     this.outbox.push({ to, body, at: new Date() });
     if (this.outbox.length > 100) this.outbox.shift();
-    // Intentionally visible in the console in development.
     logger.info(`[sms:dev] to=${to} body="${body}"`);
   },
 };
 
 const twilioProvider = {
   name: 'twilio',
-  async send({ to, body }) {
-    const url = `https://api.twilio.com/2010-04-01/Accounts/${env.TWILIO_ACCOUNT_SID}/Messages.json`;
+  async send({ to, body }, s) {
+    const url = `https://api.twilio.com/2010-04-01/Accounts/${encodeURIComponent(s.twilio_account_sid)}/Messages.json`;
     const res = await fetch(url, {
       method: 'POST',
       headers: {
-        Authorization: `Basic ${Buffer.from(`${env.TWILIO_ACCOUNT_SID}:${env.TWILIO_AUTH_TOKEN}`).toString('base64')}`,
+        Authorization: `Basic ${Buffer.from(`${s.twilio_account_sid}:${s.twilio_auth_token}`).toString('base64')}`,
         'Content-Type': 'application/x-www-form-urlencoded',
       },
-      body: new URLSearchParams({ To: to, From: env.TWILIO_FROM, Body: body }),
+      body: new URLSearchParams({ To: to, From: s.twilio_from, Body: body }),
+      signal: AbortSignal.timeout(15000),
     });
     if (!res.ok) throw new Error(`Twilio send failed: ${res.status}`);
   },
 };
 
-const providers = { dev: devProvider, twilio: twilioProvider };
-export const sms = providers[env.SMS_PROVIDER];
 export { devProvider };
 
-// OTP message in the user's language (falls back to English).
+/** Send through whichever provider is configured right now. Returns the provider name. */
+export async function sendSms(msg) {
+  const s = await settings();
+  const provider = s.sms_provider === 'twilio' && s.twilio_account_sid && s.twilio_auth_token ? twilioProvider : devProvider;
+  await provider.send(msg, s);
+  return provider.name;
+}
+
 const OTP_TEXT = {
   en: (code) => `Your FoundBack code is ${code}. It expires in 5 minutes. Never share it with anyone.`,
   ur: (code) => `آپ کا FoundBack کوڈ ${code} ہے۔ یہ 5 منٹ میں ختم ہو جائے گا۔ یہ کسی کے ساتھ شیئر نہ کریں۔`,

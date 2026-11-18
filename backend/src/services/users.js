@@ -6,8 +6,8 @@ import { textDirFor } from '../data/languages.js';
 import { badRequest } from '../lib/errors.js';
 import { maskPhone } from '../lib/phone.js';
 import { countrySummary, getCountry } from './countries.js';
+import { settings } from './settings.js';
 
-export const COUNTRY_CHANGE_COOLDOWN_DAYS = 30;
 
 export async function loadUser(id, db = { query }) {
   const { rows } = await db.query(
@@ -41,14 +41,18 @@ export function trustLevel(user) {
   return 'new';
 }
 
-export function nextCountryChangeAt(user) {
+export function nextCountryChangeAt(user, cooldownDays = 30) {
   if (!user.country_changed_at) return null;
-  return new Date(user.country_changed_at.getTime() + COUNTRY_CHANGE_COOLDOWN_DAYS * 864e5);
+  return new Date(new Date(user.country_changed_at).getTime() + cooldownDays * 864e5);
 }
 
 /** The signed-in user's own profile (GET /api/me). */
 export async function serializeMe(user) {
   const country = await getCountry(user.country_code);
+  const s = await settings();
+  const locationFresh = Boolean(
+    user.location_verified_at && Date.now() - new Date(user.location_verified_at).getTime() < s.location_max_age_hours * 3600_000,
+  );
   const steps = {
     country: Boolean(user.country_code),
     city: Boolean(user.city_id),
@@ -88,7 +92,14 @@ export async function serializeMe(user) {
         ? { countryCode: user.travel_country_code.trim(), until: user.travel_until }
         : null,
     countryChangedAt: user.country_changed_at,
-    nextCountryChangeAt: nextCountryChangeAt(user),
+    nextCountryChangeAt: nextCountryChangeAt(user, s.country_change_cooldown_days),
+    location: {
+      countryCode: user.location_country?.trim() ?? null,
+      verifiedAt: user.location_verified_at ?? null,
+      fresh: locationFresh,
+      required: s.require_live_location,
+    },
+    hasPassword: Boolean(user.password_hash),
     createdAt: user.created_at,
   };
 }

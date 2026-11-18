@@ -8,3 +8,6 @@ process.env.OTP_DEV_ECHO = 'true';
 process.env.SMS_PROVIDER = 'dev';
 process.env.GOOGLE_CLIENT_ID = '';
 process.env.CORS_ORIGINS = 'http://localhost:5173';
+// Test-only staff account created by bootstrapAdmin in global setup.
+process.env.ADMIN_EMAIL = 'admin@test.foundback.invalid';
+process.env.ADMIN_INITIAL_PASSWORD = 'Test-Only#Pass2026';

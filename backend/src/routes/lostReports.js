@@ -17,13 +17,14 @@ import { storeImage } from '../services/images.js';
 import { serializeItems } from '../services/items.js';
 import { matchLostReport } from '../services/matching.js';
 import { signedUrl } from '../services/storage.js';
+import { assertLiveLocation } from '../services/location.js';
+import { settings } from '../services/settings.js';
 
 export const lostReportsRouter = Router();
 export const alertsRouter = Router();
 export const travelRouter = Router();
 for (const r of [lostReportsRouter, alertsRouter, travelRouter]) r.use(requireAuth, requireOnboarded);
 
-const TRAVEL_DAYS = 30;
 
 const activeTravel = (u) => (u.travel_country_code && u.travel_until && new Date(u.travel_until) > new Date() ? u.travel_country_code.trim() : null);
 
@@ -84,19 +85,22 @@ lostReportsRouter.post('/', upload.any(), async (req, res) => {
     cc = activeTravel(u);
     if (!cc) throw badRequest('TRAVEL_INACTIVE', 'Turn on travel mode first.');
   }
+  // Home reports need a live location at home. Travel reports were unlocked by a
+  // live location inside the travel country when travel mode was turned on.
+  await assertLiveLocation(u, b.travel ? [req.countryCode, cc] : [req.countryCode]);
   const country = await getCountry(cc);
   if (findSensitive(b.description, country).length) {
     throw badRequest('CONTACT_DETAILS_BLOCKED', 'Public text cannot contain phone numbers, emails, links or ID numbers.', { field: 'description' });
   }
   if (b.lostFrom > new Date(Date.now() + 5 * 60_000)) throw badRequest('DATE_IN_FUTURE', 'The date cannot be in the future.');
   const recent = await query("SELECT count(*)::int AS n FROM lost_reports WHERE owner_id = $1 AND created_at > now() - interval '1 day'", [u.id]);
-  if (recent.rows[0].n >= 10) throw tooMany('You have reached the daily limit for lost reports.');
+  if (recent.rows[0].n >= (await settings()).max_lost_reports_per_day) throw tooMany('You have reached the daily limit for lost reports.');
   if (!(await isPointInCountry(b.location.lat, b.location.lng, country))) {
     throw badRequest('LOCATION_OUTSIDE_COUNTRY', `The area must be inside ${country.name}.`);
   }
   const photos = filesOf(req, 'photos').slice(0, 5);
   const stored = [];
-  for (const f of photos) stored.push(await storeImage(f.buffer, cc, { blurFaces: true }));
+  for (const f of photos) stored.push(await storeImage(f.buffer, cc, { moderateImage: false }));
 
   const report = await tx(async (db) => {
     const { rows } = await db.query(
@@ -210,7 +214,7 @@ alertsRouter.post(
     const b = req.body;
     const country = await getCountry(req.countryCode);
     const count = await query('SELECT count(*)::int AS n FROM saved_alerts WHERE user_id = $1 AND active_until > now()', [req.user.id]);
-    if (count.rows[0].n >= 10) throw badRequest('ALERT_LIMIT', 'You can have up to 10 active alerts.');
+    if (count.rows[0].n >= (await settings()).max_alerts) throw badRequest('ALERT_LIMIT', 'You can have up to 10 active alerts.');
     if (!(await isPointInCountry(b.location.lat, b.location.lng, country))) throw badRequest('LOCATION_OUTSIDE_COUNTRY', 'The area must be inside your country.');
     const { rows } = await query(
       `INSERT INTO saved_alerts (country_code, user_id, category, keywords, label, lat, lng, radius_m, active_until)
@@ -230,16 +234,20 @@ alertsRouter.delete('/:id', validate({ params: z.object({ id: z.string().uuid() 
 // Travel mode
 // ---------------------------------------------------------------------------
 travelRouter.post('/', validate({ body: z.object({ countryCode }) }), async (req, res) => {
+  const s = await settings();
+  if (!s.travel_mode_enabled) throw forbidden('FEATURE_DISABLED', 'Travel mode is turned off.');
   const cc = req.body.countryCode;
   if (cc === req.countryCode) throw badRequest('TRAVEL_SAME_COUNTRY', 'Travel mode is for another country.');
   const country = await getCountry(cc);
   if (!country?.enabled) throw badRequest('COUNTRY_DISABLED', 'FoundBack is not available in this country yet.');
   const current = activeTravel(req.user);
   if (current && current !== cc) throw forbidden('TRAVEL_ACTIVE', 'You can use travel mode for one country at a time.');
+  // You must actually be in the country you're travelling to.
+  await assertLiveLocation(req.user, cc);
   const { rows } = await query(
-    `UPDATE users SET travel_country_code = $2, travel_until = COALESCE(CASE WHEN travel_country_code = $2 THEN travel_until END, now() + interval '${TRAVEL_DAYS} days')
+    `UPDATE users SET travel_country_code = $2, travel_until = COALESCE(CASE WHEN travel_country_code = $2 THEN travel_until END, now() + make_interval(days => $3))
      WHERE id = $1 RETURNING travel_country_code, travel_until`,
-    [req.user.id, cc],
+    [req.user.id, cc, s.travel_days],
   );
   await audit({ actorId: req.user.id, countryCode: req.countryCode, action: 'user.travel_on', meta: { country: cc }, ip: req.ip });
   res.json({ travel: { countryCode: rows[0].travel_country_code.trim(), until: rows[0].travel_until } });

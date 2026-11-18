@@ -1,6 +1,7 @@
 // File storage.
 // * Production: Cloudflare R2 (S3 API), PRIVATE bucket, objects served only via
 //   short-lived presigned URLs (SIGNED_URL_TTL_SECONDS, default 5 minutes).
+//   Credentials come from live settings (Admin → Settings → Storage) or env.
 // * Development/tests (no R2 credentials): files live in the `local_files`
 //   table and are served by GET /api/files/<key>?exp&sig (HMAC-signed, same TTL).
 import crypto from 'node:crypto';
@@ -8,16 +9,30 @@ import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } fro
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { env } from '../config/env.js';
 import { query } from '../db/pool.js';
+import { settings } from './settings.js';
 
-export const usingR2 = Boolean(env.R2_ACCOUNT_ID && env.R2_ACCESS_KEY_ID && env.R2_SECRET_ACCESS_KEY && env.R2_BUCKET);
+let client = null;
+let clientSig = null;
 
-const s3 = usingR2
-  ? new S3Client({
+/** S3 client for the current R2 settings, or null when R2 isn't configured. */
+async function r2() {
+  const s = await settings();
+  if (!(s.r2_account_id && s.r2_access_key_id && s.r2_secret_access_key && s.r2_bucket)) return null;
+  const sig = `${s.r2_account_id}|${s.r2_access_key_id}|${s.r2_secret_access_key}`;
+  if (sig !== clientSig) {
+    client = new S3Client({
       region: 'auto',
-      endpoint: `https://${env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-      credentials: { accessKeyId: env.R2_ACCESS_KEY_ID, secretAccessKey: env.R2_SECRET_ACCESS_KEY },
-    })
-  : null;
+      endpoint: `https://${s.r2_account_id}.r2.cloudflarestorage.com`,
+      credentials: { accessKeyId: s.r2_access_key_id, secretAccessKey: s.r2_secret_access_key },
+    });
+    clientSig = sig;
+  }
+  return { s3: client, bucket: s.r2_bucket };
+}
+
+export async function usingR2() {
+  return Boolean(await r2());
+}
 
 /** `{country}/{yyyy-mm}/{uuid}` — callers append the suffix. */
 export function newKeyBase(countryCode) {
@@ -27,8 +42,9 @@ export function newKeyBase(countryCode) {
 }
 
 export async function putObject(key, body, contentType = 'image/jpeg') {
-  if (s3) {
-    await s3.send(new PutObjectCommand({ Bucket: env.R2_BUCKET, Key: key, Body: body, ContentType: contentType, CacheControl: 'private, max-age=300' }));
+  const r = await r2();
+  if (r) {
+    await r.s3.send(new PutObjectCommand({ Bucket: r.bucket, Key: key, Body: body, ContentType: contentType, CacheControl: 'private, max-age=300' }));
   } else {
     await query(
       `INSERT INTO local_files (key, content_type, data) VALUES ($1,$2,$3)
@@ -40,7 +56,8 @@ export async function putObject(key, body, contentType = 'image/jpeg') {
 
 export async function deleteObject(key) {
   if (!key) return;
-  if (s3) await s3.send(new DeleteObjectCommand({ Bucket: env.R2_BUCKET, Key: key }));
+  const r = await r2();
+  if (r) await r.s3.send(new DeleteObjectCommand({ Bucket: r.bucket, Key: key }));
   else await query('DELETE FROM local_files WHERE key = $1', [key]);
 }
 
@@ -49,9 +66,8 @@ const localSig = (key, exp) => crypto.createHmac('sha256', env.HASH_PEPPER).upda
 /** Short-lived URL for a private object. */
 export async function signedUrl(key) {
   if (!key) return null;
-  if (s3) {
-    return getSignedUrl(s3, new GetObjectCommand({ Bucket: env.R2_BUCKET, Key: key }), { expiresIn: env.SIGNED_URL_TTL_SECONDS });
-  }
+  const r = await r2();
+  if (r) return getSignedUrl(r.s3, new GetObjectCommand({ Bucket: r.bucket, Key: key }), { expiresIn: env.SIGNED_URL_TTL_SECONDS });
   const exp = Math.floor(Date.now() / 1000) + env.SIGNED_URL_TTL_SECONDS;
   return `${env.API_PUBLIC_URL}/api/files/${key}?exp=${exp}&sig=${localSig(key, exp)}`;
 }

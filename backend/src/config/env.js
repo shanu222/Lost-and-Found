@@ -30,57 +30,29 @@ const schema = z.object({
   ENCRYPTION_KEY: z.string().min(40, 'ENCRYPTION_KEY must be 32 bytes base64'),
   HASH_PEPPER: z.string().min(32, 'HASH_PEPPER must be at least 32 chars'),
 
-  GOOGLE_CLIENT_ID: z.string().optional().default(''),
 
-  SMS_PROVIDER: z.enum(['dev', 'twilio']).default('dev'),
-  // Return OTP codes in API responses (dev provider only, never in production).
+  // Return OTP codes in API responses (dev SMS provider, never in production).
   OTP_DEV_ECHO: bool,
-  TWILIO_ACCOUNT_SID: z.string().optional().default(''),
-  TWILIO_AUTH_TOKEN: z.string().optional().default(''),
-  TWILIO_FROM: z.string().optional().default(''),
-
-  RESEND_API_KEY: z.string().optional().default(''),
-  EMAIL_FROM: z.string().default('FoundBack <no-reply@foundback.app>'),
 
   NOMINATIM_URL: z.string().default('https://nominatim.openstreetmap.org'),
   NOMINATIM_EMAIL: z.string().optional().default(''),
 
-  // --- Storage: Cloudflare R2 (S3-compatible). Without R2 credentials files are
-  // kept in Postgres (local_files) — fine for development, not for production.
-  R2_ACCOUNT_ID: z.string().optional().default(''),
-  R2_ACCESS_KEY_ID: z.string().optional().default(''),
-  R2_SECRET_ACCESS_KEY: z.string().optional().default(''),
-  R2_BUCKET: z.string().optional().default(''),
+  // Note: API keys and integrations (R2, Resend, Twilio, Google, AI, VAPID…)
+  // are read by services/settings.js so the admin panel can change them live.
   SIGNED_URL_TTL_SECONDS: z.coerce.number().default(300),
   // Public base URL of this API (used for locally stored file URLs).
   API_PUBLIC_URL: z.string().default(''),
-
-  // --- Pluggable image services
-  FACE_BLUR_PROVIDER: z.enum(['none', 'rekognition']).default('none'),
-  IMAGE_MODERATION_PROVIDER: z.enum(['none', 'rekognition']).default('none'),
-  AWS_REGION: z.string().default('eu-west-1'),
-  AWS_ACCESS_KEY_ID: z.string().optional().default(''),
-  AWS_SECRET_ACCESS_KEY: z.string().optional().default(''),
-
-  // --- Translation of user posts / chat
-  TRANSLATE_PROVIDER: z.enum(['none', 'google', 'deepl', 'openai']).default('none'),
-  GOOGLE_TRANSLATE_API_KEY: z.string().optional().default(''),
-  DEEPL_API_KEY: z.string().optional().default(''),
-  DEEPL_API_URL: z.string().default('https://api-free.deepl.com'),
-  OPENAI_API_KEY: z.string().optional().default(''),
-  OPENAI_BASE_URL: z.string().default('https://api.openai.com/v1'),
-  OPENAI_MODEL: z.string().default('gpt-4o-mini'),
-
-  // --- Web push (generate with: npx web-push generate-vapid-keys)
-  VAPID_PUBLIC_KEY: z.string().optional().default(''),
-  VAPID_PRIVATE_KEY: z.string().optional().default(''),
-  VAPID_SUBJECT: z.string().default('mailto:admin@example.com'),
 
   // --- Safe handover places (OpenStreetMap Overpass API)
   OVERPASS_URL: z.string().default('https://overpass-api.de/api/interpreter'),
 
   // Background jobs (claim expiry, reminders, alert expiry). Disable on extra replicas.
   JOBS_ENABLED: z.string().optional().default('true').transform((v) => v !== 'false'),
+
+  // First admin account (created on start if it doesn't exist yet). The
+  // password is only used to create the account; change it in the admin panel.
+  ADMIN_EMAIL: z.string().optional().default(''),
+  ADMIN_INITIAL_PASSWORD: z.string().optional().default(''),
 
   TRUST_PROXY: z.coerce.number().default(1),
   LOG_LEVEL: z.string().default('info'),
@@ -97,6 +69,6 @@ export const env = parsed.data;
 export const isProd = env.NODE_ENV === 'production';
 export const isTest = env.NODE_ENV === 'test';
 
-if (isProd && env.SMS_PROVIDER === 'dev') {
-  console.warn('[config] SMS_PROVIDER=dev in production — OTP codes are only logged, not sent.');
+if (isProd && (process.env.SMS_PROVIDER ?? 'dev') === 'dev') {
+  console.warn('[config] SMS_PROVIDER=dev in production — OTP codes are only logged, not sent (change it in Admin → Settings).');
 }

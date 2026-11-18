@@ -16,6 +16,10 @@ import { notify } from '../services/notifications.js';
 import { signedUrl } from '../services/storage.js';
 import { revokeAllForUser } from '../services/tokens.js';
 import { listItemClaims } from './claims.js';
+import { adminView, updateSettings, settings as liveSettings } from '../services/settings.js';
+import { sendEmail } from '../services/email.js';
+import { complete } from '../services/ai.js';
+import { hashPassword, strongPassword, verifyPassword } from '../lib/password.js';
 
 export const adminRouter = Router();
 adminRouter.use(requireAuth, requireRole('admin', 'moderator'));
@@ -328,6 +332,7 @@ adminRouter.get('/users', validate({ query: z.object({ q: z.string().trim().max(
   }
   const { rows } = await query(
     `SELECT u.id, u.display_name, u.country_code, u.role, u.status, u.trust_score, u.returns_count, u.created_at, u.phone_last4,
+       u.location_country, u.ip_country, u.vpn_flagged_at,
        (SELECT count(*)::int FROM claims c WHERE c.claimant_id = u.id) AS claims,
        (SELECT count(*)::int FROM claims c WHERE c.claimant_id = u.id AND c.status = 'rejected') AS rejected_claims,
        (SELECT count(*)::int FROM reports r WHERE r.target_id = u.id OR r.target_id IN (SELECT id FROM found_items WHERE finder_id = u.id)) AS reports
@@ -339,6 +344,7 @@ adminRouter.get('/users', validate({ query: z.object({ q: z.string().trim().max(
       id: u.id, displayName: u.display_name, countryCode: u.country_code?.trim() ?? null, role: u.role, status: u.status,
       trustScore: u.trust_score, returnsCount: u.returns_count, claims: u.claims, rejectedClaims: u.rejected_claims,
       reports: u.reports, phoneLast4: u.phone_last4, createdAt: u.created_at,
+      locationCountry: u.location_country?.trim() ?? null, ipCountry: u.ip_country?.trim() ?? null, vpnFlagged: Boolean(u.vpn_flagged_at),
     })),
   });
 });
@@ -537,3 +543,66 @@ adminRouter.get('/audit', validate({ query: z.object({ action: z.string().max(60
   );
   res.json({ entries: rows.map((a) => ({ id: Number(a.id), countryCode: a.country_code?.trim() ?? null, action: a.action, targetType: a.target_type, targetId: a.target_id, meta: a.meta, actor: a.actor, at: a.created_at })) });
 });
+
+// ---------------------------------------------------------------------------
+// Live settings (admin only). Changes apply to the web app and the installed
+// app within seconds, without a redeploy. Secrets are write-only.
+// ---------------------------------------------------------------------------
+adminRouter.get('/settings', adminOnly, async (_req, res) => {
+  res.json({ settings: await adminView() });
+});
+
+adminRouter.patch(
+  '/settings',
+  adminOnly,
+  validate({ body: z.object({ changes: z.record(z.string().max(60), z.union([z.string().max(2000), z.number(), z.boolean(), z.null()])) }) }),
+  async (req, res) => {
+    const keys = Object.keys(req.body.changes);
+    if (!keys.length) throw badRequest('VALIDATION_FAILED', 'Nothing to change.');
+    await tx(async (db) => {
+      await updateSettings(req.body.changes, req.user.id, db);
+      // Never log secret values — only which keys changed.
+      await audit({ actorId: req.user.id, action: 'admin.settings_update', meta: { keys }, ip: req.ip }, db);
+    });
+    res.json({ settings: await adminView() });
+  },
+);
+
+adminRouter.post('/settings/test-email', adminOnly, async (req, res) => {
+  const to = req.user.email;
+  if (!to) throw badRequest('NO_EMAIL', 'Your admin account has no email address.');
+  if (!(await liveSettings()).resend_api_key) throw badRequest('EMAIL_NOT_CONFIGURED', 'Add a Resend API key first.');
+  try {
+    await sendEmail({ to, subject: 'FoundBack test email', text: 'Email sending works.', html: '<p>Email sending works. ✅</p>' });
+  } catch (err) {
+    throw badRequest('EMAIL_FAILED', `Email failed: ${err.message}`);
+  }
+  res.json({ ok: true, to });
+});
+
+adminRouter.post('/settings/test-ai', adminOnly, async (_req, res) => {
+  try {
+    const r = await complete('Translate the user text into Urdu. Reply with the translation only.', 'Your wallet has been found.');
+    res.json({ ok: true, provider: r.provider, sample: r.text.slice(0, 200) });
+  } catch {
+    throw badRequest('AI_FAILED', 'No AI provider answered. Check the keys and models.');
+  }
+});
+
+// Staff account: change own password.
+adminRouter.post(
+  '/account/password',
+  validate({ body: z.object({ current: z.string().max(200).optional(), next: z.string().max(200) }) }),
+  async (req, res) => {
+    const { rows } = await query('SELECT password_hash FROM users WHERE id = $1', [req.user.id]);
+    if (rows[0]?.password_hash && !(await verifyPassword(req.body.current ?? '', rows[0].password_hash))) {
+      throw badRequest('PASSWORD_WRONG', 'Your current password is not correct.');
+    }
+    if (!strongPassword(req.body.next)) throw badRequest('PASSWORD_WEAK', 'Use at least 10 characters with upper and lower case letters, a number and a symbol.');
+    await query('UPDATE users SET password_hash = $2 WHERE id = $1', [req.user.id, await hashPassword(req.body.next)]);
+    // Sign out every other session of this account.
+    await query('UPDATE refresh_tokens SET revoked_at = now() WHERE user_id = $1 AND revoked_at IS NULL', [req.user.id]);
+    await audit({ actorId: req.user.id, action: 'admin.password_change', ip: req.ip });
+    res.json({ ok: true });
+  },
+);

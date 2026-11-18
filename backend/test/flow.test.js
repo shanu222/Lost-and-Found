@@ -2,7 +2,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import sharp from 'sharp';
 import { pool } from '../src/db/pool.js';
-import { PLACES, auth, fakeGeocoder, onboardedUser, postFound } from './helpers.js';
+import { PLACES, auth, fakeGeocoder, onboardedUser, postFound, shareLocation } from './helpers.js';
 
 beforeAll(fakeGeocoder);
 afterAll(() => pool.end());
@@ -85,6 +85,10 @@ describe('country scoping', () => {
     const { body } = await postFound(finder, 'AE');
     const traveller = await onboardedUser('PK');
     await traveller.agent.get(`/api/found-items/${body.item.id}`).set(auth(traveller.token)).expect(404);
+    // Travel mode needs a live location inside the travel country.
+    const denied = await traveller.agent.post('/api/me/travel').set(auth(traveller.token)).send({ countryCode: 'AE' });
+    expect(denied.body.error.code).toBe('LOCATION_COUNTRY_MISMATCH');
+    await shareLocation(traveller, 'AE').expect(200);
     await traveller.agent.post('/api/me/travel').set(auth(traveller.token)).send({ countryCode: 'AE' }).expect(200);
     await traveller.agent.get(`/api/found-items/${body.item.id}`).set(auth(traveller.token)).expect(200);
     const second = await traveller.agent.post('/api/me/travel').set(auth(traveller.token)).send({ countryCode: 'GB' });

@@ -9,6 +9,8 @@ export async function setup() {
   await client.end();
   const { seed } = await import('../src/db/seed.js');
   await seed();
+  const { bootstrapAdmin } = await import('../src/routes/adminAuth.js');
+  await bootstrapAdmin({ info: () => {}, warn: console.warn });
   const { pool } = await import('../src/db/pool.js');
   await pool.end();
 }
