@@ -83,6 +83,10 @@ export async function serializeMe(user) {
     points: user.points,
     notificationPrefs: user.notification_prefs,
     onboarding: { completed: Boolean(user.onboarding_completed_at), steps },
+    travel:
+      user.travel_country_code && user.travel_until && new Date(user.travel_until) > new Date()
+        ? { countryCode: user.travel_country_code.trim(), until: user.travel_until }
+        : null,
     countryChangedAt: user.country_changed_at,
     nextCountryChangeAt: nextCountryChangeAt(user),
     createdAt: user.created_at,

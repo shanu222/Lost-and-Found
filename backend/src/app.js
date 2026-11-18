@@ -12,6 +12,14 @@ import { errorHandler, notFoundHandler } from './middleware/errors.js';
 import { authRouter } from './routes/auth.js';
 import { meRouter } from './routes/me.js';
 import { metaRouter } from './routes/meta.js';
+import { foundItemsRouter } from './routes/foundItems.js';
+import { alertsRouter, lostReportsRouter, travelRouter } from './routes/lostReports.js';
+import { claimsRouter, createClaim, listItemClaims } from './routes/claims.js';
+import { conversationsRouter } from './routes/conversations.js';
+import { adminRouter } from './routes/admin.js';
+import { miscRouter } from './routes/misc.js';
+import { requireAuth, requireOnboarded } from './middleware/auth.js';
+import { upload } from './lib/upload.js';
 
 export function createApp() {
   const app = express();
@@ -51,8 +59,19 @@ export function createApp() {
 
   app.use('/api', apiLimiter);
   app.use('/api/auth', authRouter);
+  app.use('/api/me/travel', travelRouter);
   app.use('/api/me', meRouter);
   app.use('/api/meta', metaRouter);
+  // Claims are created/reviewed under the item they belong to.
+  app.post('/api/found-items/:id/claims', requireAuth, requireOnboarded, upload.any(), createClaim);
+  app.get('/api/found-items/:id/claims', requireAuth, requireOnboarded, listItemClaims);
+  app.use('/api/found-items', foundItemsRouter);
+  app.use('/api/lost-reports', lostReportsRouter);
+  app.use('/api/alerts', alertsRouter);
+  app.use('/api/claims', claimsRouter);
+  app.use('/api/conversations', conversationsRouter);
+  app.use('/api/admin', adminRouter);
+  app.use('/api', miscRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

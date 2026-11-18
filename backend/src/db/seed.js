@@ -12,6 +12,7 @@ import { pool, tx } from './pool.js';
 import { blindIndex, encrypt } from '../lib/crypto.js';
 import { approximate } from '../lib/geo.js';
 import { normalizePhone } from '../lib/phone.js';
+import { matchLostReport } from '../services/matching.js';
 
 const BBOX = {
   PK: [23.6, 60.8, 37.1, 77.9],
@@ -150,8 +151,68 @@ export async function seed() {
         await db.query('UPDATE users SET returns_count = returns_count + 1, points = points + 50 WHERE id = $1', [finderId]);
       }
     }
+
+    // Completed returns with consented success stories, plus one open claim to review.
+    for (const [cc, description, claimantPhone, story] of RETURNS) {
+      const item = (await db.query('SELECT * FROM found_items WHERE country_code = $1 AND description = $2', [cc, description])).rows[0];
+      const claimantId = userIds[claimantPhone];
+      if (!item || (await db.query('SELECT 1 FROM claims WHERE found_item_id = $1', [item.id])).rowCount) continue;
+      const decided = new Date(new Date(item.found_at).getTime() + 864e5);
+      const claim = (await db.query(
+        `INSERT INTO claims (country_code, found_item_id, claimant_id, status, decided_at, created_at, expires_at)
+         VALUES ($1,$2,$3,'approved',$4,$4,$4) RETURNING id`,
+        [cc, item.id, claimantId, decided],
+      )).rows[0];
+      const qs = await db.query('SELECT id, answer_enc FROM hidden_questions WHERE found_item_id = $1', [item.id]);
+      for (const q of qs.rows) await db.query('INSERT INTO claim_answers (claim_id, question_id, answer_enc) VALUES ($1,$2,$3)', [claim.id, q.id, q.answer_enc]);
+      await db.query('INSERT INTO conversations (country_code, claim_id, finder_id, claimant_id) VALUES ($1,$2,$3,$4)', [cc, claim.id, item.finder_id, claimantId]);
+      const h = (await db.query(
+        `INSERT INTO handovers (country_code, claim_id, found_item_id, owner_id, finder_id, finder_agreed_at, owner_agreed_at, method, place_name, completed_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$6,'meet','Police station',$7) RETURNING id`,
+        [cc, claim.id, item.id, claimantId, item.finder_id, decided, item.returned_at],
+      )).rows[0];
+      await db.query(
+        `INSERT INTO ratings (country_code, handover_id, rater_id, ratee_id, stars, note, share_story) VALUES ($1,$2,$3,$4,5,$5,true)`,
+        [cc, h.id, claimantId, item.finder_id, story],
+      );
+    }
+
+    const wallet = (await db.query("SELECT * FROM found_items WHERE country_code = 'PK' AND description = 'Brown leather wallet'")).rows[0];
+    const bilal = userIds['+923331234567'];
+    if (wallet && !(await db.query('SELECT 1 FROM claims WHERE found_item_id = $1', [wallet.id])).rowCount) {
+      const claim = (await db.query(
+        "INSERT INTO claims (country_code, found_item_id, claimant_id) VALUES ('PK',$1,$2) RETURNING id",
+        [wallet.id, bilal],
+      )).rows[0];
+      const qs = await db.query('SELECT id, position FROM hidden_questions WHERE found_item_id = $1 ORDER BY position', [wallet.id]);
+      const answers = ['Two bank cards, a metro card and a photo of my parents', 'About 3500 rupees'];
+      for (const q of qs.rows) await db.query('INSERT INTO claim_answers (claim_id, question_id, answer_enc) VALUES ($1,$2,$3)', [claim.id, q.id, encrypt(answers[q.position] ?? '—')]);
+      await db.query("INSERT INTO claim_proofs (claim_id, country_code, kind, text_enc) VALUES ($1,'PK','contents',$2)", [claim.id, encrypt('Brown leather, bought from Saddar. Inside: HBL and Meezan cards, Metro bus card, a small family photo.')]);
+      await db.query("INSERT INTO conversations (country_code, claim_id, finder_id, claimant_id) VALUES ('PK',$1,$2,$3)", [claim.id, wallet.finder_id, bilal]);
+      await db.query("UPDATE found_items SET status = 'under_review' WHERE id = $1", [wallet.id]);
+    }
   });
+
+  // A lost report that matches a found laptop (runs the real matcher).
+  const marcus = (await pool.query("SELECT id FROM users WHERE display_name = 'Marcus'")).rows[0];
+  if (marcus && !(await pool.query('SELECT 1 FROM lost_reports WHERE owner_id = $1', [marcus.id])).rowCount) {
+    const { rows } = await pool.query(
+      `INSERT INTO lost_reports (country_code, owner_id, category, description, lat, lng, radius_m, lost_from, lost_to, search_text)
+       VALUES ('US',$1,'laptop','Silver MacBook in a black sleeve with a Brooklyn Bridge sticker',40.72,-74.01,3000, now() - interval '4 days', now() - interval '2 days', 'silver macbook in a black sleeve')
+       RETURNING *`,
+      [marcus.id],
+    );
+    await matchLostReport(rows[0]).catch(() => 0);
+  }
 }
+
+const RETURNS = [
+  ['PK', 'Car keys with a blue keychain', '+923001234567', 'I had given up on my car keys. Bilal kept them safe and we met at the Gulberg police station. Shukriya!'],
+  ['GB', 'Silver wristwatch', '+447812345678', "My late grandfather's watch is back on my wrist. Thank you, Oliver — and thank you FoundBack."],
+  ['AE', 'Gold bracelet', '+971551234567', 'Returned within two days at the Al Majaz police station. Wonderful people.'],
+  ['US', 'Bank card found at a coffee shop', '+13125550199', 'Got my card back before I even finished cancelling it. Amazing!'],
+];
+
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   seed()

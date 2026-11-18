@@ -17,6 +17,11 @@ export function errorHandler(err, req, res, _next) {
   if (err?.type === 'entity.too.large') {
     return res.status(413).json({ error: { code: 'PAYLOAD_TOO_LARGE', message: 'Request is too large.' } });
   }
+  if (err?.name === 'MulterError') {
+    const code = err.code === 'LIMIT_FILE_SIZE' ? 'IMAGE_TOO_LARGE' : 'UPLOAD_INVALID';
+    return res.status(400).json({ error: { code, message: code === 'IMAGE_TOO_LARGE' ? 'Each image must be under 10 MB.' : 'Upload rejected.' } });
+  }
   logger.error({ err, path: req.path }, 'unhandled error');
+  if (process.env.DEBUG_ERRORS) console.error(err);
   res.status(500).json({ error: { code: 'INTERNAL', message: 'Something went wrong. Please try again.' } });
 }

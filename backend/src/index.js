@@ -4,8 +4,10 @@ import { migrate } from './db/migrate.js';
 import { pool } from './db/pool.js';
 import { createApp } from './app.js';
 import { logger } from './lib/logger.js';
+import { startJobs } from './jobs.js';
 
 await migrate({ log: logger });
+if (env.JOBS_ENABLED) startJobs();
 const server = createApp().listen(env.PORT, () => logger.info(`FoundBack API listening on :${env.PORT}`));
 
 // Graceful shutdown for Railway deploys.
