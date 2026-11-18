@@ -13,6 +13,7 @@ import { currentPosition } from '../lib/geo';
 import type { Category, CountryConfig, FoundItem } from '../lib/types';
 import { useErrorMessage } from '../lib/useErrorMessage';
 import { looksSensitive, toLocalInput } from '../lib/forms';
+import { withLocation } from '../lib/location';
 
 const PinMap = lazy(() => import('../components/Maps').then((m) => ({ default: m.PinMap })));
 const STEPS = ['category', 'photos', 'describe', 'questions', 'where', 'details', 'review'] as const;
@@ -36,7 +37,7 @@ export function WizardProgress({ steps, index, prefix }: { steps: readonly strin
 
 export default function FoundWizard() {
   const { t, i18n } = useTranslation();
-  const { user } = useAuth();
+  const { user, setUser } = useAuth();
   const navigate = useNavigate();
   const errorMessage = useErrorMessage();
   const [step, setStep] = useState<Step>('category');
@@ -104,7 +105,8 @@ export default function FoundWizard() {
         noReward,
         guidanceAccepted: true,
       };
-      const r = await api<{ item: FoundItem; matches: number }>('/found-items', { method: 'POST', body: formData(data, { photos }) });
+      // Posting needs a fresh live location inside your country.
+      const r = await withLocation(() => api<{ item: FoundItem; matches: number }>('/found-items', { method: 'POST', body: formData(data, { photos }) }), setUser);
       navigate(`/items/${r.item.id}`, { replace: true, state: { posted: true, matches: r.matches } });
     } catch (err) {
       setError(errorMessage(err));

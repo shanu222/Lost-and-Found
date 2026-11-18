@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/AuthProvider';
-import { GoogleButton, googleEnabled } from '../components/GoogleButton';
+import { GoogleButton } from '../components/GoogleButton';
+import { Link } from 'react-router-dom';
+import { useAppConfig } from '../lib/appConfig';
 import { KeyIcon, LogoMark, PinIcon, ShieldIcon } from '../components/Icons';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { PhoneOtpForm } from '../components/PhoneOtpForm';
@@ -12,6 +14,8 @@ import type { SessionResponse } from '../lib/types';
 export default function SignIn() {
   const { t } = useTranslation();
   const { acceptSession } = useAuth();
+  const { config } = useAppConfig();
+  const googleEnabled = config.google_signin_available;
   const { countries } = useCountries();
   const [suggested, setSuggested] = useState<string | null>(null);
 
@@ -79,6 +83,8 @@ export default function SignIn() {
           <p className="small muted" style={{ margin: 0 }}>
             {t('app.disclaimer')}
           </p>
+          {!config.registration_open && <p className="small muted" style={{ margin: 0 }}>{t('system.registrationClosed')}</p>}
+          <Link to="/admin/login" className="small muted" style={{ alignSelf: 'flex-start' }}>{t('staff.link')}</Link>
         </div>
       </main>
     </div>

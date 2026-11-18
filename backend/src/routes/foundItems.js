@@ -51,9 +51,10 @@ function assertCleanPublicText(text, country, field) {
 // Post a found item (multipart: data=<json>, photos=<1..5 images>)
 // ---------------------------------------------------------------------------
 foundItemsRouter.post('/', upload.any(), async (req, res) => {
-  const b = multipartData(req, createSchema);
   const user = req.user;
+  // Location first: no point validating a form the user may not post from here.
   await assertLiveLocation(user, req.countryCode);
+  const b = multipartData(req, createSchema);
   const country = await getCountry(req.countryCode);
   const photos = filesOf(req, 'photos');
   if (photos.length < 1 || photos.length > 5) throw badRequest('PHOTOS_REQUIRED', 'Add between 1 and 5 photos.');

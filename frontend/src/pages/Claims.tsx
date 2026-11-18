@@ -15,6 +15,7 @@ import { formatDate } from '../lib/format';
 import type { Category, ClaimView, CountryConfig, FoundItem, ReviewClaim } from '../lib/types';
 import { useApi } from '../lib/useApi';
 import { useErrorMessage } from '../lib/useErrorMessage';
+import { withLocation } from '../lib/location';
 
 // ---------------------------------------------------------------------------
 // Owner: "This is mine — claim it"
@@ -22,7 +23,7 @@ import { useErrorMessage } from '../lib/useErrorMessage';
 export function ClaimForm() {
   const { id } = useParams();
   const { t, i18n } = useTranslation();
-  const { user } = useAuth();
+  const { user, setUser } = useAuth();
   const navigate = useNavigate();
   const errorMessage = useErrorMessage();
   const item = useApi<{ item: FoundItem }>(`/found-items/${id}`);
@@ -60,7 +61,7 @@ export function ClaimForm() {
         answers: qs.data!.questions.map((q) => ({ questionId: q.id, answer: answers[q.id].trim() })),
         proof: { identifier: identifier.trim() || undefined, contents: contents.trim() || undefined, text: text.trim() || undefined },
       };
-      const r = await api<{ claim: { id: string } }>(`/found-items/${id}/claims`, { method: 'POST', body: formData(data, { proofImages: images, selfie }) });
+      const r = await withLocation(() => api<{ claim: { id: string } }>(`/found-items/${id}/claims`, { method: 'POST', body: formData(data, { proofImages: images, selfie }) }), setUser);
       navigate(`/claims/${r.claim.id}`, { replace: true });
     } catch (err) {
       setError(errorMessage(err));

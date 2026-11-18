@@ -74,6 +74,7 @@ export async function api<T = unknown>(path: string, { method = 'GET', body, sig
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     const e = data?.error ?? {};
+    if (e.code === 'MAINTENANCE') window.dispatchEvent(new Event('fb:maintenance'));
     throw new ApiError(res.status, e.code ?? 'INTERNAL', e.message ?? 'Request failed', e.details);
   }
   return data as T;

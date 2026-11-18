@@ -16,6 +16,8 @@ import type { City, Me } from '../lib/types';
 import { suggestCountry, useCountries } from '../lib/useCountries';
 import { useErrorMessage } from '../lib/useErrorMessage';
 import type { HomeArea } from '../components/HomeAreaMap';
+import { LocationPrompt } from '../components/LocationPrompt';
+import { useAppConfig } from '../lib/appConfig';
 
 const HomeAreaMap = lazy(() => import('../components/HomeAreaMap'));
 
@@ -66,6 +68,53 @@ export default function Onboarding() {
 
 // ---------------------------------------------------------------------------
 function CountryStep({ onNext }: { onNext: () => void }) {
+  const { config } = useAppConfig();
+  return config.require_live_location ? <LiveCountryStep onNext={onNext} /> : <PickCountryStep onNext={onNext} />;
+}
+
+/** Country decided by the device's live GPS location (default). */
+function LiveCountryStep({ onNext }: { onNext: () => void }) {
+  const { t } = useTranslation();
+  const { user, setUser } = useAuth();
+  const errorMessage = useErrorMessage();
+  const [detected, setDetected] = useState<string | null>(user?.location.fresh ? user.location.countryCode : null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const save = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const res = await api<{ user: Me }>('/me/onboarding/country', { method: 'POST', body: { timezone } });
+      setUser(res.user);
+      onNext();
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className="stack" aria-labelledby="step-title">
+      <div>
+        <h2 id="step-title">{t('onboarding.country.liveTitle')}</h2>
+        <p className="muted" style={{ margin: 0 }}>{t('onboarding.country.liveBody')}</p>
+      </div>
+      <LocationPrompt onVerified={setDetected} />
+      {error && <Alert>{error}</Alert>}
+      <div className="step-actions">
+        <Button onClick={save} loading={busy} disabled={!detected}>
+          {detected ? t('onboarding.country.continueIn', { country: countryName(detected) }) : t('app.continue')}
+        </Button>
+      </div>
+    </section>
+  );
+}
+
+/** Manual country choice — only when an admin turns live location off. */
+function PickCountryStep({ onNext }: { onNext: () => void }) {
   const { t } = useTranslation();
   const { user, setUser } = useAuth();
   const { countries, error, reload } = useCountries();

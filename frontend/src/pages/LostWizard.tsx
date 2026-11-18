@@ -11,6 +11,7 @@ import { CATEGORIES, IDENTIFIER } from '../lib/categories';
 import { countryName, formatDistance } from '../lib/format';
 import { looksSensitive, toLocalInput } from '../lib/forms';
 import { currentPosition } from '../lib/geo';
+import { withLocation } from '../lib/location';
 import type { Category, LostReport } from '../lib/types';
 import { useErrorMessage } from '../lib/useErrorMessage';
 import { WizardProgress } from './FoundWizard';
@@ -21,7 +22,7 @@ type Step = (typeof STEPS)[number];
 
 export default function LostWizard() {
   const { t, i18n } = useTranslation();
-  const { user } = useAuth();
+  const { user, setUser } = useAuth();
   const navigate = useNavigate();
   const errorMessage = useErrorMessage();
   const [step, setStep] = useState<Step>('category');
@@ -77,7 +78,7 @@ export default function LostWizard() {
         reward: reward ? Number(reward) : undefined,
         travel,
       };
-      const r = await api<{ report: LostReport; matches: number }>('/lost-reports', { method: 'POST', body: formData(data, { photos }) });
+      const r = await withLocation(() => api<{ report: LostReport; matches: number }>('/lost-reports', { method: 'POST', body: formData(data, { photos }) }), setUser);
       navigate('/my/lost', { replace: true, state: { created: r.report.id, matches: r.matches } });
     } catch (err) {
       setError(errorMessage(err));

@@ -1057,6 +1057,7 @@ html[lang='ur'] .luggage-tag__label {
 }
 .switch {
   position: relative;
+  display: inline-block;
   width: 46px;
   height: 28px;
   flex: 0 0 auto;
@@ -2098,4 +2099,113 @@ input[type='range'] {
 }
 .inline-field .btn {
   flex: 0 0 auto;
+}
+
+/* ---- live location, banners, staff ---- */
+.location-prompt {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--harbour-50);
+}
+.location-prompt__icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  border-radius: 50%;
+  background: var(--beacon-500);
+  color: var(--beacon-ink);
+}
+.location-prompt--compact {
+  padding: 12px;
+}
+.announcement {
+  padding: 10px 16px;
+  text-align: center;
+  font-size: var(--t-sm);
+  font-weight: 600;
+  background: var(--beacon-100);
+  color: var(--beacon-ink);
+}
+.announcement--warning {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+.maintenance {
+  background: var(--mist);
+}
+.settings-grid {
+  display: grid;
+  gap: 4px;
+}
+.setting-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+  padding: 12px 0;
+  border-top: 1px dashed var(--line);
+}
+@media (min-width: 760px) {
+  .setting-row {
+    grid-template-columns: 2fr 3fr;
+    align-items: center;
+    gap: 16px;
+  }
+}
+.setting-row__label strong {
+  display: block;
+  font-size: var(--t-sm);
+}
+.setting-row__label > span {
+  display: block;
+  font-size: var(--t-xs);
+  color: var(--muted);
+}
+.source-tag {
+  display: inline-block;
+  margin-inline-start: 6px;
+  padding: 0 6px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #eef0f2;
+  color: #4a5560;
+  vertical-align: middle;
+}
+.source-tag--admin {
+  background: var(--beacon-100);
+  color: #7a4a06;
+}
+.staff-login {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px 16px;
+  background: var(--harbour-900);
+}
+.staff-login .panel {
+  width: 100%;
+  max-width: 420px;
+}
+.sticky-save {
+  position: sticky;
+  bottom: calc(var(--tabbar-h) + 8px);
+  z-index: 5;
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  box-shadow: 0 8px 24px rgb(10 52 54 / 0.12);
+}
+@media (min-width: 768px) {
+  .sticky-save {
+    bottom: 12px;
+  }
 }

@@ -6,15 +6,16 @@ import { badRequest } from './errors.js';
 
 /**
  * @param {string} input raw input ("0300 1234567" or "+92 300 1234567")
- * @param {string} [countryCode] ISO country the number must belong to
+ * @param {string} [countryCode] ISO country the number must belong to (or, with strict=false, only a hint
+ *   for reading numbers typed without a country code)
  * @returns {{ e164: string, national: string, international: string, last4: string, country: string }}
  */
-export function normalizePhone(input, countryCode) {
+export function normalizePhone(input, countryCode, { strict = true } = {}) {
   const parsed = parsePhoneNumberFromString(String(input || ''), countryCode || undefined);
   if (!parsed || !parsed.isValid()) {
     throw badRequest('PHONE_INVALID', 'That phone number does not look valid.');
   }
-  if (countryCode && parsed.country && parsed.country !== countryCode) {
+  if (strict && countryCode && parsed.country && parsed.country !== countryCode) {
     throw badRequest('PHONE_COUNTRY_MISMATCH', 'The phone number must belong to your country.', {
       expected: countryCode,
       got: parsed.country,

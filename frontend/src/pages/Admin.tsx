@@ -11,9 +11,11 @@ import { countryName, formatDate, formatNumber } from '../lib/format';
 import { useApi } from '../lib/useApi';
 import { useCountries } from '../lib/useCountries';
 import { useErrorMessage } from '../lib/useErrorMessage';
+import { lazy, Suspense } from 'react';
+const AdminSettings = lazy(() => import('./AdminSettings'));
 
-const TABS = ['dashboard', 'reports', 'disputes', 'identity', 'photos', 'users', 'countries', 'moderators', 'translations', 'audit'] as const;
-const ADMIN_ONLY = new Set(['countries', 'moderators']);
+const TABS = ['dashboard', 'settings', 'reports', 'disputes', 'identity', 'photos', 'users', 'countries', 'moderators', 'translations', 'audit'] as const;
+const ADMIN_ONLY = new Set(['settings', 'countries', 'moderators']);
 
 export default function Admin() {
   const { t } = useTranslation();
@@ -52,6 +54,7 @@ export default function Admin() {
       {tab === 'identity' && <Identity q={q} />}
       {tab === 'photos' && <Photos q={q} />}
       {tab === 'users' && <Users q={q} selfId={user?.id} />}
+      {tab === 'settings' && isAdmin && <Suspense fallback={<LoadingState />}><AdminSettings /></Suspense>}
       {tab === 'countries' && isAdmin && <Countries />}
       {tab === 'moderators' && isAdmin && <Moderators />}
       {tab === 'translations' && <Translations />}
@@ -255,7 +258,7 @@ function Photos({ q }: { q: string }) {
 }
 
 // ---------------------------------------------------------------------------
-interface UserRow { id: string; displayName: string | null; countryCode: string | null; role: string; status: string; trustScore: number; returnsCount: number; claims: number; rejectedClaims: number; reports: number; phoneLast4: string | null; createdAt: string }
+interface UserRow { id: string; displayName: string | null; countryCode: string | null; role: string; status: string; trustScore: number; returnsCount: number; claims: number; rejectedClaims: number; reports: number; phoneLast4: string | null; createdAt: string; locationCountry?: string | null; ipCountry?: string | null; vpnFlagged?: boolean }
 interface UserDetail { user: UserRow & { bannedReason: string | null }; claims: { id: string; status: string; flags: string[]; identifierMatch: boolean | null; rejectReason: string | null; createdAt: string; category: string; description: string; itemId: string }[] }
 function Users({ q, selfId }: { q: string; selfId?: string }) {
   const { t } = useTranslation();
@@ -274,7 +277,7 @@ function Users({ q, selfId }: { q: string; selfId?: string }) {
         {(d) => (
           <div className="table-wrap">
             <table className="table">
-              <thead><tr><th>{t('admin.name')}</th><th>{t('admin.country')}</th><th>{t('admin.statusCol')}</th><th>{t('admin.trust')}</th><th>{t('my.claims')}</th><th>{t('admin.rejected')}</th><th>{t('admin.tabs.reports')}</th><th /></tr></thead>
+              <thead><tr><th>{t('admin.name')}</th><th>{t('admin.country')}</th><th>{t('admin.statusCol')}</th><th>{t('admin.trust')}</th><th>{t('my.claims')}</th><th>{t('admin.rejected')}</th><th>{t('admin.tabs.reports')}</th><th>{t('admin.locationCol')}</th><th /></tr></thead>
               <tbody>
                 {d.users.map((u) => (
                   <tr key={u.id}>
@@ -285,6 +288,7 @@ function Users({ q, selfId }: { q: string; selfId?: string }) {
                     <td>{u.claims}</td>
                     <td>{u.rejectedClaims}</td>
                     <td>{u.reports}</td>
+                    <td>{u.locationCountry ?? '—'}{u.ipCountry && u.ipCountry !== u.locationCountry ? ` / IP ${u.ipCountry}` : ''}{u.vpnFlagged && <span className="pill pill--danger" style={{ marginInlineStart: 6 }}>{t('admin.vpn')}</span>}</td>
                     <td><Button variant="link" onClick={() => setOpen(u.id)} disabled={u.id === selfId}>{t('admin.details')}</Button></td>
                   </tr>
                 ))}

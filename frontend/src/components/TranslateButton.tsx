@@ -1,20 +1,13 @@
 // "Translate to <my language>" for user-written text. Original stays visible.
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useAppConfig } from '../lib/appConfig';
 import { useTranslation } from 'react-i18next';
 import { getLanguage } from '../i18n/languages';
 import { api } from '../lib/api';
 import { useErrorMessage } from '../lib/useErrorMessage';
 
-let enabledCache: boolean | null = null;
 function useTranslationEnabled() {
-  const [enabled, setEnabled] = useState(enabledCache);
-  useEffect(() => {
-    if (enabledCache !== null) return;
-    api<{ enabled: boolean }>('/translate/status')
-      .then((r) => setEnabled((enabledCache = r.enabled)))
-      .catch(() => setEnabled(false));
-  }, []);
-  return enabled;
+  return useAppConfig().config.translation_available;
 }
 
 export function TranslateButton({ type, id, sourceLang }: { type: 'found_item' | 'message' | 'lost_report'; id: string; sourceLang?: string }) {

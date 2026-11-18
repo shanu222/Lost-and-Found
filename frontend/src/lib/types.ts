@@ -52,6 +52,8 @@ export interface Me {
   notificationPrefs: { email: boolean; push: boolean; inapp: boolean };
   onboarding: { completed: boolean; steps: { country: boolean; city: boolean; phone: boolean; profile: boolean } };
   travel: { countryCode: string; until: string } | null;
+  location: { countryCode: string | null; verifiedAt: string | null; fresh: boolean; required: boolean };
+  hasPassword: boolean;
   countryChangedAt: string | null;
   nextCountryChangeAt: string | null;
   createdAt: string;

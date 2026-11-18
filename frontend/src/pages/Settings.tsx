@@ -3,6 +3,9 @@ import { Link } from 'react-router-dom';
 import { PhotoPicker } from '../components/PhotoPicker';
 import { disablePush, enablePush, pushStatus } from '../lib/push';
 import { formData } from '../lib/api';
+import { useAppConfig } from '../lib/appConfig';
+import { LocationPrompt } from '../components/LocationPrompt';
+import { withLocation } from '../lib/location';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/AuthProvider';
 import { CountryList } from '../components/CountryList';
@@ -194,20 +197,24 @@ export default function Settings() {
 function ChangeCountryDialog({ open, onClose, current, cooldownUntil }: { open: boolean; onClose: () => void; current: string | null; cooldownUntil: string | null }) {
   const { t } = useTranslation();
   const { user, setUser } = useAuth();
+  const { config } = useAppConfig();
   const { countries } = useCountries();
   const errorMessage = useErrorMessage();
   const [selected, setSelected] = useState<string | null>(null);
+  const [detected, setDetected] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const target = countries?.find((c) => c.code === selected);
+  const live = config.require_live_location;
+  const targetCode = live ? detected : selected;
+  const target = countries?.find((c) => c.code === targetCode);
 
   const confirm = async () => {
-    if (!selected) return;
+    if (!targetCode) return;
     setBusy(true);
     setError(null);
     try {
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      const res = await api<{ user: Me }>('/me/country', { method: 'POST', body: { countryCode: selected, confirm: true, timezone } });
+      const res = await api<{ user: Me }>('/me/country', { method: 'POST', body: { ...(live ? {} : { countryCode: targetCode }), confirm: true, timezone } });
       setUser(res.user); // onboarding is now incomplete → the app routes to /onboarding
       onClose();
     } catch (err) {
@@ -226,13 +233,19 @@ function ChangeCountryDialog({ open, onClose, current, cooldownUntil }: { open: 
           <p className="small muted" style={{ margin: 0 }}>
             {t('settings.changeCountryBody')}
           </p>
-          {countries ? (
+          {live ? (
+            <>
+              <p className="small muted" style={{ margin: 0 }}>{t('settings.changeCountryLive')}</p>
+              <LocationPrompt compact onVerified={setDetected} />
+              {detected && detected === current && <Alert kind="info">{t('errors.COUNTRY_SAME')}</Alert>}
+            </>
+          ) : countries ? (
             <CountryList countries={countries.filter((c) => c.code !== current)} value={selected} onSelect={setSelected} />
           ) : (
             <LoadingState />
           )}
           {error && <Alert>{error}</Alert>}
-          <Button variant="danger" block onClick={confirm} loading={busy} disabled={!target}>
+          <Button variant="danger" block onClick={confirm} loading={busy} disabled={!target || targetCode === current}>
             {target ? t('settings.changeCountryConfirm', { country: countryName(target.code, target.name) }) : t('settings.changeCountry')}
           </Button>
         </div>
@@ -282,12 +295,13 @@ function DeleteAccountDialog({ open, onClose }: { open: boolean; onClose: () => 
 
 function PushRow() {
   const { t } = useTranslation();
+  const { config } = useAppConfig();
   const [state, setState] = useState<'unsupported' | 'denied' | 'on' | 'off' | null>(null);
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     void pushStatus().then(setState);
   }, []);
-  if (!state || state === 'unsupported') return null;
+  if (!state || state === 'unsupported' || !config.push_available) return null;
   return (
     <div className="settings-row">
       <span>
@@ -320,20 +334,22 @@ function PushRow() {
 function TravelSection() {
   const { t } = useTranslation();
   const { user, setUser } = useAuth();
+  const { config } = useAppConfig();
   const { countries } = useCountries();
   const errorMessage = useErrorMessage();
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  if (!user) return null;
+  if (!user || !config.travel_mode_enabled) return null;
   const refresh = async () => setUser((await api<{ user: Me }>('/me')).user);
   const turnOn = async () => {
     if (!selected) return;
     setBusy(true);
     setError(null);
     try {
-      await api('/me/travel', { method: 'POST', body: { countryCode: selected } });
+      // You must be physically in the country you're travelling to.
+      await withLocation(() => api('/me/travel', { method: 'POST', body: { countryCode: selected } }), setUser);
       await refresh();
       setOpen(false);
     } catch (err) {
@@ -365,6 +381,7 @@ function TravelSection() {
       )}
       <Dialog open={open} onClose={() => setOpen(false)} title={t('travel.pick')} labelledBy="travel-title">
         <div className="stack">
+          <p className="small muted" style={{ margin: 0 }}>{t('travel.locationNote')}</p>
           {countries ? <CountryList countries={countries.filter((c) => c.code !== user.countryCode)} value={selected} onSelect={setSelected} /> : <LoadingState />}
           {error && <Alert>{error}</Alert>}
           <Button block loading={busy} disabled={!selected} onClick={turnOn}>{t('travel.confirm')}</Button>

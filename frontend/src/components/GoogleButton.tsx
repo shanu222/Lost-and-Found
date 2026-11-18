@@ -7,7 +7,8 @@ import type { SessionResponse } from '../lib/types';
 import { useErrorMessage } from '../lib/useErrorMessage';
 import { Alert } from './ui';
 
-const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
+import { useAppConfig } from '../lib/appConfig';
+const ENV_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
 
 interface GoogleId {
   initialize(o: { client_id: string; callback: (r: { credential: string }) => void; ux_mode?: string }): void;
@@ -32,12 +33,12 @@ function loadScript() {
   return scriptPromise;
 }
 
-export const googleEnabled = Boolean(CLIENT_ID);
-
 export function GoogleButton({ onSession }: { onSession: (s: SessionResponse) => void }) {
   const { t, i18n } = useTranslation();
   const errorMessage = useErrorMessage();
   const slot = useRef<HTMLDivElement>(null);
+  const { config } = useAppConfig();
+  const CLIENT_ID = config.google_client_id || ENV_CLIENT_ID;
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -71,7 +72,7 @@ export function GoogleButton({ onSession }: { onSession: (s: SessionResponse) =>
     return () => {
       cancelled = true;
     };
-  }, [i18n.language, onSession, errorMessage, t]);
+  }, [i18n.language, onSession, errorMessage, t, CLIENT_ID]);
 
   if (!CLIENT_ID) return null;
   return (

@@ -44,7 +44,7 @@ authRouter.post(
   otpLimiter,
   validate({ body: z.object({ phone: z.string().min(4).max(32), countryCode: countryCode.optional(), language }) }),
   async (req, res) => {
-    const phone = normalizePhone(req.body.phone, req.body.countryCode);
+    const phone = normalizePhone(req.body.phone, req.body.countryCode, { strict: false });
     const result = await sendOtp({ e164: phone.e164, purpose: 'signin', language: req.body.language, ip: req.ip });
     res.json({ sent: true, phone: phone.international, ...result });
   },
@@ -63,7 +63,7 @@ authRouter.post(
     }),
   }),
   async (req, res) => {
-    const phone = normalizePhone(req.body.phone, req.body.countryCode);
+    const phone = normalizePhone(req.body.phone, req.body.countryCode, { strict: false });
     const { phoneHash } = await verifyOtp({ e164: phone.e164, purpose: 'signin', code: req.body.code });
 
     const existing = await query('SELECT id, status FROM users WHERE phone_hash = $1', [phoneHash]);

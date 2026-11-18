@@ -10,6 +10,8 @@ import { Header, TabBar } from './components/Header';
 import { LoadingState } from './components/ui';
 import Home from './pages/Home';
 import SignIn from './pages/SignIn';
+import { AppConfigProvider, useAppConfig } from './lib/appConfig';
+import { AnnouncementBanner, MaintenanceScreen } from './components/SystemBanners';
 
 const Onboarding = lazy(() => import('./pages/Onboarding'));
 const Settings = lazy(() => import('./pages/Settings'));
@@ -27,6 +29,7 @@ const Chat = lazy(() => import('./pages/Messages').then((m) => ({ default: m.Cha
 const Handover = lazy(() => import('./pages/Handover'));
 const Notifications = lazy(() => import('./pages/Notifications'));
 const Admin = lazy(() => import('./pages/Admin'));
+const StaffLogin = lazy(() => import('./pages/StaffLogin'));
 
 const APP_ROUTES: [string, React.ComponentType][] = [
   ['/browse', Browse],
@@ -53,6 +56,7 @@ function Shell({ children, tabs = true }: { children: React.ReactNode; tabs?: bo
         {t('app.skipToContent')}
       </a>
       <Header />
+      <AnnouncementBanner />
       <Suspense fallback={<LoadingState />}>{children}</Suspense>
       {tabs && <TabBar />}
     </div>
@@ -61,6 +65,7 @@ function Shell({ children, tabs = true }: { children: React.ReactNode; tabs?: bo
 
 function AppRoutes() {
   const { status, user } = useAuth();
+  const { config } = useAppConfig();
 
   if (status === 'loading') {
     return (
@@ -70,11 +75,33 @@ function AppRoutes() {
     );
   }
 
+  // Maintenance mode (Admin → Settings): everyone except admins sees a notice.
+  if (config.maintenance_mode && user?.role !== 'admin') {
+    return (
+      <Routes>
+        <Route path="/admin/login" element={<Suspense fallback={<LoadingState />}><StaffLogin /></Suspense>} />
+        <Route path="*" element={<MaintenanceScreen />} />
+      </Routes>
+    );
+  }
+
   if (status === 'signedOut') {
     return (
       <Routes>
         <Route path="/signin" element={<SignIn />} />
+        <Route path="/admin/login" element={<Suspense fallback={<LoadingState />}><StaffLogin /></Suspense>} />
         <Route path="*" element={<Navigate to="/signin" replace />} />
+      </Routes>
+    );
+  }
+
+  // Staff accounts created by email (no country): admin panel only.
+  if ((user?.role === 'admin' || user?.role === 'moderator') && !user.countryCode) {
+    return (
+      <Routes>
+        <Route path="/admin" element={<Shell tabs={false}><Admin /></Shell>} />
+        <Route path="/admin/:tab" element={<Shell tabs={false}><Admin /></Shell>} />
+        <Route path="*" element={<Navigate to="/admin" replace />} />
       </Routes>
     );
   }
@@ -139,9 +166,11 @@ function AppRoutes() {
 export default function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <AppRoutes />
-      </AuthProvider>
+      <AppConfigProvider>
+        <AuthProvider>
+          <AppRoutes />
+        </AuthProvider>
+      </AppConfigProvider>
     </BrowserRouter>
   );
 }

@@ -8,6 +8,21 @@ Each user lives in one **country space**: they only see items, maps, matches, sa
 
 ---
 
+## Admin panel and live settings
+
+- **Staff sign-in:** `/admin/login` — email + password, then a 6-digit code emailed to the staff address. Five wrong passwords lock the account for 15 minutes; every attempt is in the audit log. The first admin is created on start from `ADMIN_EMAIL` + `ADMIN_INITIAL_PASSWORD` (then change the password in **Admin → Settings → My staff account**).
+- **Admin → Settings** changes the website and the installed phone app live (within ~3 minutes, no redeploy): maintenance mode, announcement banner, new sign-ups on/off, feature switches (Google sign-in, translation, push, travel mode), limits (posts/claims per day, claim expiry, travel length, country-change cooldown), location/VPN policy, and **every integration key** — Resend, Twilio, Google client ID, OpenAI/Gemini/OpenRouter, Google Translate/DeepL, ipinfo, VAPID and R2.
+- Keys are stored AES-256-GCM encrypted, are write-only (the panel shows `••••1234`), and changes are audit-logged by name only. A value set in the panel overrides the Railway variable; **Remove** falls back to Railway.
+- Core secrets stay in Railway only: `DATABASE_URL`, `JWT_ACCESS_SECRET`, `ENCRYPTION_KEY`, `HASH_PEPPER`.
+- The installed app (PWA) and any future native app read the same live config from `GET /api/meta/app-config`.
+
+## Live location and VPN blocking
+
+- A user's country is decided by the device's **live GPS**, reverse-geocoded on the server — a VPN changes the IP address, not the GPS.
+- The server also looks up the country of the IP address (CDN header, or ipinfo.io with `IPINFO_TOKEN`). If it differs from the GPS country, the request is **blocked** (`VPN_POLICY=block`), only flagged for admins (`flag`), or ignored (`off`).
+- Posting, claiming, travel mode and moving country need a **fresh** check (default: within 24 h) from inside the right country.
+- Limits: a determined person can still fake GPS with developer tools or a rooted phone. The VPN check, the claim proof, ID-number matching, the handover code and moderator review together make that unrewarding.
+
 ## Contents
 
 - [Architecture](#architecture)
