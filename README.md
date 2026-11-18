@@ -225,7 +225,7 @@ Migrations run on every start, so new deploys update the schema automatically.
 ### 2. Vercel — web app
 
 1. **Add New → Project** → import this repository. Set **Root Directory** to `frontend`. Framework preset: Vite (detected).
-2. Edit `frontend/vercel.json`: replace `https://YOUR-API.up.railway.app` in the `/api` rewrite with your Railway domain and commit.
+2. Edit `frontend/vercel.json`: replace `https://lost-and-found-production-01a31278.up.railway.app` in the `/api` rewrite with your Railway domain and commit.
 3. Add `VITE_GOOGLE_CLIENT_ID` if you use Google sign-in. Leave `VITE_API_URL` empty.
 4. Deploy. Add the Vercel domain (and `https://*.vercel.app` for previews) to the API's `CORS_ORIGINS`.
 

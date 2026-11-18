@@ -4,7 +4,7 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://YOUR-API.up.railway.app/api/:path*" },
+    { "source": "/api/:path*", "destination": "https://lost-and-found-production-01a31278.up.railway.app/api/:path*" },
     { "source": "/((?!api/|assets/).*)", "destination": "/index.html" }
   ],
   "headers": [
