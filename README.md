@@ -4,7 +4,7 @@ A trusted, worldwide Lost & Found. People who **find** something post it; people
 
 Each user lives in one **country space**: they only see items, maps, matches, safe places and guidance for their own country. English is the default language everywhere; users can switch to their country's language (or any supported language) at any time.
 
-> **Build status: Stage 1 of 7 is done.** Stage 1 covers the database schema, authentication, onboarding (country, city, phone, language), i18n with RTL, country-scoped APIs, the home and settings screens, tests and deployment config. See [Roadmap](#roadmap).
+> **Build status: all 7 stages are built.** Onboarding, found/lost posting with private photo storage, the claim and verification flow, masked chat, handover with a 6-digit code / QR, matching and alerts, notifications (in-app, email, web push), the admin panel with country moderators, post translation and an installable PWA. See [Roadmap](#roadmap).
 
 ---
 
@@ -49,7 +49,7 @@ flowchart LR
   SPA --> Static
   SPA -->|"same-origin /api (first-party cookie)"| Rewrite --> API
   API --> PG
-  API -->|"stage 2"| R2
+  API --> R2
   API -->|"cached, 1 req/s, countrycodes"| OSM
   SPA -->|tiles| OSM
   API --> SMS
@@ -176,7 +176,17 @@ It also seeds popular cities, bounding boxes and 13 found items (with encrypted 
 | `NOMINATIM_URL` | no | Default public Nominatim; use your own instance for heavy traffic |
 | `NOMINATIM_EMAIL` | yes (prod) | Contact email sent in the User-Agent (OSM usage policy) |
 | `LOG_LEVEL` | no | `info` by default |
-| `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` | stage 2 | Cloudflare R2 credentials (see below) |
+| `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` | yes (prod) | Cloudflare R2 credentials (see below). Without them, photos are stored in Postgres — development only |
+| `SIGNED_URL_TTL_SECONDS` | no | Lifetime of image URLs, default `300` (5 minutes) |
+| `API_PUBLIC_URL` | no | Only for locally stored files; leave empty with the `/api` rewrite |
+| `FACE_BLUR_PROVIDER` | no | `none` (default) or `rekognition` — blurs faces in public photos |
+| `IMAGE_MODERATION_PROVIDER` | no | `none` (default) or `rekognition` — rejects unsafe images |
+| `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | with Rekognition | AWS credentials with `rekognition:DetectFaces` and `rekognition:DetectModerationLabels` |
+| `TRANSLATE_PROVIDER` | no | `none` (default), `google`, `deepl` or `openai` (any OpenAI-compatible API) |
+| `GOOGLE_TRANSLATE_API_KEY` / `DEEPL_API_KEY` (+ `DEEPL_API_URL`) / `OPENAI_API_KEY` (+ `OPENAI_BASE_URL`, `OPENAI_MODEL`) | with that provider | Translation provider credentials |
+| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | for push | Web push keys: `npx web-push generate-vapid-keys`; subject `mailto:you@yourdomain.com` |
+| `OVERPASS_URL` | no | OpenStreetMap Overpass endpoint for safe handover places |
+| `JOBS_ENABLED` | no | `true` (default). Background jobs: claim expiry (7 days), 90-day reminders, handover reminders. Set `false` on extra replicas |
 
 ### Web app (`frontend/.env`, Vercel → Environment Variables)
 
@@ -206,7 +216,7 @@ Migrations run on every start, so new deploys update the schema automatically.
 
 `vercel.json` also sets a strict Content-Security-Policy (self-hosted fonts, OSM tiles, Google Identity, R2 images), HSTS, `X-Frame-Options: DENY`, `nosniff`, a referrer policy and a permissions policy (geolocation and camera only for the app itself).
 
-### 3. Cloudflare R2 — images (used from stage 2)
+### 3. Cloudflare R2 — images
 
 1. Cloudflare dashboard → **R2 → Create bucket**, e.g. `foundback-images`. Keep **public access disabled**: the API serves images only through 5-minute signed URLs.
 2. **R2 → Manage R2 API Tokens → Create API token** with *Object Read & Write* on that bucket only. Copy the Access Key ID, Secret Access Key and your Account ID into `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_ACCOUNT_ID`, `R2_BUCKET`.
@@ -223,7 +233,13 @@ Migrations run on every start, so new deploys update the schema automatically.
    ]
    ```
 
-Object keys are `{country}/{yyyy-mm}/{uuid}.jpg` with thumbnails alongside.
+Object keys are `{country}/{yyyy-mm}/{uuid}.jpg` with `{uuid}_thumb.jpg` thumbnails alongside. Every upload is re-encoded (EXIF/GPS removed), resized to max 1600 px, and — for categories whose photos are public — faces are blurred when `FACE_BLUR_PROVIDER=rekognition`.
+
+### 6. Web push, translation and image services (optional)
+
+- **Push:** run `npx web-push generate-vapid-keys` once and set `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`. Users turn push on in **Settings → Notifications**.
+- **Translation:** set `TRANSLATE_PROVIDER` and its key. The "Translate to <my language>" buttons appear automatically; results are cached in `translations_cache`. Hidden answers are never sent to the provider.
+- **Face blur / moderation:** set `FACE_BLUR_PROVIDER=rekognition` and/or `IMAGE_MODERATION_PROVIDER=rekognition` with AWS credentials. Images the provider can't decide go to **Admin → Photos**.
 
 ### 4. Google sign-in
 
@@ -304,23 +320,32 @@ cd backend && npm test     # needs Postgres; uses TEST_DATABASE_URL or postgresq
 cd frontend && npm test
 ```
 
-The API suite (35 tests) runs against a real database that it resets and seeds. It covers OTP sign-in, attempt limits and throttling, refresh-token rotation and re-use detection, logout, encryption and blind indexes, phone-country validation, onboarding rules (city/home pin/phone must be in the user's country, signed city references cannot be forged), country scoping of counters and city search, the 30-day country-change cooldown, data export, account deletion and the error format.
+The API suite (54 tests) runs against a real database that it resets and seeds. It covers OTP sign-in, attempt limits and throttling, refresh-token rotation and re-use detection, logout, encryption and blind indexes, phone-country validation, onboarding rules (city/home pin/phone must be in the user's country, signed city references cannot be forged), country scoping of counters and city search, the 30-day country-change cooldown, data export, account deletion and the error format.
 
 The web suite checks English as the default, instant switching to Urdu/Arabic with RTL, Arabic plural rules, fallback to English for missing keys and unsupported languages, and that Urdu and Arabic contain every English string.
 
-Claim → approval → handover-code tests and permission tests for moderators come with stages 3, 4 and 6.
+It also covers posting (EXIF stripping, approximate locations, blocked contact details, pins outside the country, private ID photos), country scoping (another country's items return 404 for viewing, questions and claims), travel mode, the full claim → follow-up → approval → handover-code → returned → rating flow, ID-number comparison without disclosure, claim limits and proof rules, masked chat, matching across/within countries, saved alerts, moderator country scoping, admin country configuration, bans, identity checks and the claim-expiry job.
 
 ## Roadmap
 
 | Stage | Scope | Status |
 |---|---|---|
 | 1 | Schema, auth, onboarding (country/city/phone/language), i18n + RTL | ✅ Done |
-| 2 | Found & lost posting, R2 uploads (EXIF strip, face blur, thumbnails), browse/map, server-side scoping | Next |
-| 3 | Claim & verification flow | |
-| 4 | Masked chat, handover with code/QR | |
-| 5 | Matching, saved alerts, notifications (in-app, email, push) | |
-| 6 | Admin panel, moderators, per-country configuration, translation coverage | |
-| 7 | Post translation, design polish, PWA, final testing | |
+| 2 | Found & lost posting, R2 uploads (EXIF strip, face blur, thumbnails), browse/map, server-side scoping | ✅ Done |
+| 3 | Claim & verification flow | ✅ Done |
+| 4 | Masked chat, handover with code/QR | ✅ Done |
+| 5 | Matching, saved alerts, notifications (in-app, email, push) | ✅ Done |
+| 6 | Admin panel, moderators, per-country configuration, translation coverage | ✅ Done |
+| 7 | Post translation, design polish, PWA, final testing | ✅ Done |
+
+### Product decisions taken (change them if you prefer otherwise)
+
+- **Phone numbers must belong to the user's country**, and changing country asks for a phone number from the new country. An expat using a home-country SIM cannot verify. Relax this in `backend/src/lib/phone.js` (`normalizePhone`) and `routes/me.js` if needed.
+- **Travel mode** also lets the traveller open and claim items in that one other country (otherwise a match abroad could never be claimed).
+- **Chat** stays masked even after approval; phone numbers are only revealed on the handover screen when both people opt in.
+- **Rewards** are recorded for the owner's records only; FoundBack never handles money.
+- **Sign-in screen** defaults the dialling code to the visitor's detected country, or Pakistan if none is detected.
+- Chat uses polling every 4 seconds (no WebSockets), which keeps Railway hosting simple.
 
 ---
 
