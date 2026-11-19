@@ -176,6 +176,10 @@ export default function Settings() {
               {t('settings.delete')}
             </Button>
           </div>
+          <p className="small" style={{ margin: '12px 0 0', display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+            <Link to="/terms">{t('settings.termsLink')}</Link>
+            <Link to="/privacy">{t('settings.privacyLink')}</Link>
+          </p>
         </section>
 
         {(user.role === 'admin' || user.role === 'moderator') && (

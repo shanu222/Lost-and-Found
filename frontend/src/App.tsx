@@ -4,12 +4,13 @@
 //   signed in, set up     → app (home, settings)
 import { lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './auth/AuthProvider';
 import { Header, TabBar } from './components/Header';
 import { LoadingState } from './components/ui';
 import Home from './pages/Home';
 import SignIn from './pages/SignIn';
+const Legal = lazy(() => import('./pages/Legal'));
 import { AppConfigProvider, useAppConfig } from './lib/appConfig';
 import { AnnouncementBanner, MaintenanceScreen } from './components/SystemBanners';
 
@@ -66,6 +67,16 @@ function Shell({ children, tabs = true }: { children: React.ReactNode; tabs?: bo
 function AppRoutes() {
   const { status, user } = useAuth();
   const { config } = useAppConfig();
+  const { pathname } = useLocation();
+
+  // Terms and privacy are public, whatever the account state.
+  if (pathname === '/terms' || pathname === '/privacy') {
+    return (
+      <Suspense fallback={<LoadingState />}>
+        <Legal doc={pathname === '/terms' ? 'terms' : 'privacy'} />
+      </Suspense>
+    );
+  }
 
   if (status === 'loading') {
     return (

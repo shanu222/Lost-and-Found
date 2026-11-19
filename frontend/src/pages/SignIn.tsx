@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { GoogleButton } from '../components/GoogleButton';
 import { useAppConfig } from '../lib/appConfig';
@@ -75,7 +76,7 @@ export default function SignIn() {
           {emailEnabled && <EmailPasswordForm onDone={onSession} />}
           {!googleEnabled && !emailEnabled && <p className="muted">{t('signIn.unavailable')}</p>}
           <p className="small muted" style={{ margin: 0 }}>
-            {t('signIn.terms')}
+            <Trans i18nKey="signIn.terms" components={{ terms: <Link to="/terms" />, privacy: <Link to="/privacy" /> }} />
           </p>
           <p className="small muted" style={{ margin: 0 }}>
             {t('app.disclaimer')}

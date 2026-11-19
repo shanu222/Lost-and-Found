@@ -13,7 +13,8 @@ import { countryCode, validate } from '../lib/validate.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { invalidateCountries } from '../services/countries.js';
 import { notify } from '../services/notifications.js';
-import { signedUrl } from '../services/storage.js';
+import { deleteObject, signedUrl } from '../services/storage.js';
+import { logger } from '../lib/logger.js';
 import { revokeAllForUser } from '../services/tokens.js';
 import { listItemClaims } from './claims.js';
 import { adminView, updateSettings, settings as liveSettings } from '../services/settings.js';
@@ -226,7 +227,7 @@ adminRouter.get('/identity', validate({ query: z.object({ status: z.enum(['pendi
         countryCode: c.country_code.trim(),
         status: c.status,
         user: { id: c.user_id, displayName: c.display_name, memberSince: c.member_since },
-        selfieUrl: await signedUrl(c.selfie_key), // the ID number itself is never shown
+        selfieUrl: c.selfie_key ? await signedUrl(c.selfie_key) : null, // the ID number itself is never shown
         note: c.review_note,
         submittedAt: c.created_at,
       })),
@@ -243,7 +244,9 @@ adminRouter.post(
     if (!c) throw notFound();
     assertCountry(req, c.country_code);
     if (c.status !== 'pending') throw badRequest('ALREADY_REVIEWED', 'Already reviewed.');
-    await query('UPDATE identity_checks SET status = $2, review_note = $3, reviewer_id = $4, reviewed_at = now() WHERE id = $1', [c.id, req.body.decision, req.body.note ?? null, req.user.id]);
+    await query('UPDATE identity_checks SET status = $2, review_note = $3, reviewer_id = $4, reviewed_at = now(), selfie_key = NULL WHERE id = $1', [c.id, req.body.decision, req.body.note ?? null, req.user.id]);
+    // The selfie is only needed for the review: erase it now (privacy policy).
+    if (c.selfie_key) await deleteObject(c.selfie_key).catch((err) => logger.warn({ err: err.message }, 'identity selfie delete failed'));
     if (req.body.decision === 'approved') await query('UPDATE users SET trust_score = trust_score + 10 WHERE id = $1', [c.user_id]);
     await audit({ actorId: req.user.id, countryCode: c.country_code.trim(), action: `admin.identity_${req.body.decision}`, targetType: 'user', targetId: c.user_id, ip: req.ip });
     await notify({ userId: c.user_id, countryCode: c.country_code.trim(), type: req.body.decision === 'approved' ? 'identity_approved' : 'identity_rejected', url: '/settings' });

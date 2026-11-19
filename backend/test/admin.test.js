@@ -106,6 +106,9 @@ describe('admin and moderator permissions', () => {
     await admin.agent.post(`/api/admin/identity/${check.id}`).set(auth(admin.token)).send({ decision: 'approved' }).expect(200);
     const me = await u.agent.get('/api/me').set(auth(u.token));
     expect(me.body.user.trust.identityVerified).toBe(true);
+    // The selfie is erased once reviewed.
+    const { rows } = await pool.query('SELECT selfie_key FROM identity_checks WHERE id = $1', [check.id]);
+    expect(rows[0].selfie_key).toBeNull();
   });
 
   it('background jobs expire stale claims', async () => {

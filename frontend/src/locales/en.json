@@ -55,7 +55,7 @@
     "resendIn": "You can request a new code in {{seconds}} s",
     "or": "or",
     "google": "Continue with Google",
-    "terms": "By continuing you agree to the Terms and the Privacy Policy.",
+    "terms": "By continuing you agree to the <terms>Terms of Use</terms> and the <privacy>Privacy Policy</privacy>.",
     "points": {
       "privateTitle": "Your details stay private",
       "privateBody": "Finders and owners never see each other's email until both agree.",
@@ -199,7 +199,9 @@
     "changeCountryLive": "Your new country is set from your live location, so share it from the country you now live in.",
     "email": "Email",
     "signInWith": "Sign in with",
-    "emailCode": "Email code"
+    "emailCode": "Email code",
+    "termsLink": "Terms of Use",
+    "privacyLink": "Privacy Policy"
   },
   "units": {
     "km": "{{value}} km",
