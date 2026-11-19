@@ -44,5 +44,6 @@
   "type": "module",
   "engines": {
     "node": ">=22.12"
-  }
+  },
+  "packageManager": "npm@10.9.4"
 }
