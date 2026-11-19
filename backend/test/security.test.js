@@ -30,11 +30,19 @@ describe('live location', () => {
     const res = await shareLocation(s, 'PK', { 'cf-ipcountry': 'US' });
     expect(res.status).toBe(403);
     expect(res.body.error.code).toBe('VPN_DETECTED');
+    expect(res.body.error.details).toEqual({ locationCountry: 'PK', connectionCountry: 'US' });
     const { rows } = await pool.query('SELECT vpn_flagged_at, location_verified_at FROM users WHERE id = $1', [s.user.id]);
     expect(rows[0].vpn_flagged_at).not.toBeNull();
     expect(rows[0].location_verified_at).toBeNull(); // not accepted
     // Same device without the VPN works.
     await shareLocation(s, 'PK', { 'cf-ipcountry': 'PK' }).expect(200);
+  });
+
+  it('uses the visitor IP that Vercel forwards, not the proxy hop', async () => {
+    const { clientIp } = await import('../src/services/location.js');
+    const req = (h) => ({ ip: '10.0.0.9', get: (k) => h[k.toLowerCase()] });
+    expect(clientIp(req({ 'x-vercel-id': 'bom1::abc', 'x-forwarded-for': '39.40.1.2, 76.76.21.9' }))).toBe('39.40.1.2');
+    expect(clientIp(req({ 'x-forwarded-for': '39.40.1.2, 76.76.21.9' }))).toBe('10.0.0.9'); // not via Vercel: trusted-proxy rules
   });
 
   it('rejects imprecise locations', async () => {

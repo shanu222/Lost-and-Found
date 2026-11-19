@@ -305,7 +305,8 @@
     "ACCOUNT_CONFLICT": "This email is linked to a different sign-in. Please contact support.",
     "PROVIDER_NOT_ALLOWED": "Please sign in with Google or email.",
     "SIGNIN_NOT_CONFIGURED": "Sign-in isn't set up yet. Please try again later.",
-    "EMAIL_REQUIRED": "Your account needs an email address."
+    "EMAIL_REQUIRED": "Your account needs an email address.",
+    "VPN_DETECTED_DETAIL": "Your device says you're in {{location}}, but your internet connection is in {{connection}}. Turn off any VPN or proxy — and any location simulation in your browser's developer tools — then try again."
   },
   "status": {
     "waiting": "Waiting for owner",

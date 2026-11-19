@@ -19,11 +19,27 @@ function isPrivateIp(ip) {
   return !ip || /^(::1|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|::ffff:127\.|::ffff:10\.|::ffff:192\.168\.|fc|fd|fe80)/i.test(ip);
 }
 
+/**
+ * The visitor's real IP address. The web app reaches the API through Vercel's
+ * /api rewrite, and Vercel overwrites X-Forwarded-For with the visitor's IP
+ * (its first entry); Railway's edge then appends Vercel's own address. So for
+ * requests that came through Vercel the first entry is the visitor; otherwise
+ * Express's trusted-proxy logic (TRUST_PROXY) applies.
+ */
+export function clientIp(req) {
+  const xff = req.get('x-forwarded-for');
+  if (xff && (req.get('x-vercel-id') || req.get('x-vercel-forwarded-for'))) {
+    const first = (req.get('x-vercel-forwarded-for') || xff).split(',')[0].trim();
+    if (first) return first.replace(/^::ffff:/, '');
+  }
+  return req.ip?.replace(/^::ffff:/, '');
+}
+
 /** Country of the request's IP address, or null when unknown. */
 export async function ipCountry(req) {
   const header = req.get('cf-ipcountry') || req.get('x-vercel-ip-country') || req.get('fly-client-country');
   if (header && /^[A-Z]{2}$/i.test(header) && header.toUpperCase() !== 'XX' && header.toUpperCase() !== 'T1') return header.toUpperCase();
-  const ip = req.ip?.replace(/^::ffff:/, '');
+  const ip = clientIp(req);
   if (isPrivateIp(ip)) return null;
   const s = await settings();
   const hit = ipCache.get(ip);
@@ -80,9 +96,9 @@ export async function recordLocation(req, { lat, lng, accuracy }) {
     [req.user.id, lat, lng, accuracy != null ? Math.round(accuracy) : null, gps, ipc, mismatch, s.vpn_policy],
   );
   if (mismatch) {
-    await audit({ actorId: req.user.id, countryCode: gps, action: 'security.vpn_mismatch', meta: { gps, ip: ipc, policy: s.vpn_policy }, ip: req.ip });
+    await audit({ actorId: req.user.id, countryCode: gps, action: 'security.vpn_mismatch', meta: { gps, ip: ipc, policy: s.vpn_policy }, ip: clientIp(req) });
     if (s.vpn_policy === 'block') {
-      throw forbidden('VPN_DETECTED', 'Your connection appears to come from another country. Turn off any VPN or proxy and try again.');
+      throw forbidden('VPN_DETECTED', 'Your location and your internet connection are in different countries.', { locationCountry: gps, connectionCountry: ipc });
     }
   }
   return gps;
