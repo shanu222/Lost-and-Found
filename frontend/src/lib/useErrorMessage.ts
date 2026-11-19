@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ApiError } from './api';
 import { countryName } from './format';
-import { LocationError } from './location';
+import { LocationError, NeedsCountryChoice } from './location';
 
 /** Maps any error to a translated, user-facing sentence. */
 export function useErrorMessage() {
@@ -10,6 +10,7 @@ export function useErrorMessage() {
   return useCallback(
     (err: unknown): string => {
       if (err instanceof LocationError) return t(`location.errors.${err.code}`);
+      if (err instanceof NeedsCountryChoice) return t('location.chooseBody');
       if (err instanceof ApiError) {
         if (err.code === 'NETWORK') return t('errors.network');
         const d = err.details as { locationCountry?: string; connectionCountry?: string } | undefined;

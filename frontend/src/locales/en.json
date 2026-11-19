@@ -306,7 +306,8 @@
     "PROVIDER_NOT_ALLOWED": "Please sign in with Google or email.",
     "SIGNIN_NOT_CONFIGURED": "Sign-in isn't set up yet. Please try again later.",
     "EMAIL_REQUIRED": "Your account needs an email address.",
-    "VPN_DETECTED_DETAIL": "Your device says you're in {{location}}, but your internet connection is in {{connection}}. Turn off any VPN or proxy — and any location simulation in your browser's developer tools — then try again."
+    "VPN_DETECTED_DETAIL": "Your device says you're in {{location}}, but your internet connection is in {{connection}}. Turn off any VPN or proxy — and any location simulation in your browser's developer tools — then try again.",
+    "COUNTRY_NOT_CONNECTION": "You can only choose the country you're connected from."
   },
   "status": {
     "waiting": "Waiting for owner",
@@ -1004,7 +1005,11 @@
       "unavailable": "We couldn't get your location. Turn on GPS / Location services and try again.",
       "timeout": "Getting your location took too long. Try again, ideally near a window or outdoors.",
       "unsupported": "This browser can't share your location. Try Chrome or Safari on your phone."
-    }
+    },
+    "chooseTitle": "Choose your country",
+    "chooseBody": "We couldn't get your location or tell where your connection is. Choose the country you're in now.",
+    "detectedConnection": "You're in {{country}} (from your internet connection)",
+    "detectedChosen": "You chose {{country}}"
   },
   "system": {
     "maintenanceTitle": "We'll be right back",

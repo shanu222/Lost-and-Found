@@ -24,10 +24,41 @@ export function livePosition(): Promise<{ lat: number; lng: number; accuracy: nu
   });
 }
 
-/** Get a live position and send it to the server. Returns the updated profile. */
-export async function verifyLocation(): Promise<{ countryCode: string; user: Me }> {
-  const pos = await livePosition();
-  return api<{ countryCode: string; user: Me }>('/me/location', { method: 'POST', body: pos });
+/** Location is unavailable and the connection's country is unknown: ask the user. */
+export class NeedsCountryChoice extends Error {
+  constructor() {
+    super('COUNTRY_REQUIRED');
+  }
+}
+
+export type LocationResult = { countryCode: string; user: Me; method: 'gps' | 'ip' | 'manual' };
+
+/**
+ * Confirm where the user is. Live GPS first; if the device can't share its
+ * location, the server uses the internet connection's country instead
+ * (a VPN still can't fake it). Throws NeedsCountryChoice when even that is
+ * unknown, so the UI can let the user pick their country.
+ */
+export async function verifyLocation(): Promise<LocationResult> {
+  let pos;
+  try {
+    pos = await livePosition();
+  } catch (err) {
+    if (!(err instanceof LocationError)) throw err;
+    try {
+      return await api<LocationResult>('/me/location/fallback', { method: 'POST', body: {} });
+    } catch (fallbackErr) {
+      if (fallbackErr instanceof ApiError && fallbackErr.code === 'COUNTRY_REQUIRED') throw new NeedsCountryChoice();
+      throw err; // show the original location problem
+    }
+  }
+  const r = await api<{ countryCode: string; user: Me }>('/me/location', { method: 'POST', body: pos });
+  return { ...r, method: 'gps' };
+}
+
+/** The user's own choice, used only when location and connection are both unknown. */
+export function chooseCountry(countryCode: string): Promise<LocationResult> {
+  return api<LocationResult>('/me/location/fallback', { method: 'POST', body: { countryCode } });
 }
 
 /** Run `fn`; if the server needs a fresh location, verify it and retry once. */

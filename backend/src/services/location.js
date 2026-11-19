@@ -74,6 +74,37 @@ export async function ipCountry(req) {
 }
 
 /**
+ * When the device can't share its location (permission blocked, no GPS), the
+ * country of the internet connection decides instead — a VPN still can't fake
+ * it, because the chosen country must match the connection. Only when the
+ * connection's country is unknown may the user pick their country themselves.
+ * Returns { countryCode, method }.
+ */
+export async function recordFallbackLocation(req, chosen) {
+  const ipc = await ipCountry(req);
+  let countryCode;
+  let method;
+  if (ipc) {
+    if (chosen && chosen !== ipc) {
+      throw forbidden('COUNTRY_NOT_CONNECTION', 'You can only choose the country you are connected from.', { connectionCountry: ipc });
+    }
+    countryCode = ipc;
+    method = 'ip';
+  } else {
+    if (!chosen) throw badRequest('COUNTRY_REQUIRED', 'Choose your country.');
+    countryCode = chosen;
+    method = 'manual';
+  }
+  await query(
+    `UPDATE users SET location_lat = NULL, location_lng = NULL, location_accuracy_m = NULL, location_country = $2,
+            location_verified_at = now(), location_method = $3, ip_country = $4 WHERE id = $1`,
+    [req.user.id, countryCode, method, ipc],
+  );
+  await audit({ actorId: req.user.id, countryCode, action: `security.location_${method}`, ip: clientIp(req) });
+  return { countryCode, method };
+}
+
+/**
  * Record a live location check for the user. Returns the GPS country.
  * Throws VPN_DETECTED when the policy is "block" and the IP country differs.
  */
@@ -90,7 +121,7 @@ export async function recordLocation(req, { lat, lng, accuracy }) {
 
   await query(
     `UPDATE users SET location_lat = $2, location_lng = $3, location_accuracy_m = $4, location_country = $5,
-       location_verified_at = CASE WHEN $7 AND $8 = 'block' THEN location_verified_at ELSE now() END,
+       location_verified_at = CASE WHEN $7 AND $8 = 'block' THEN location_verified_at ELSE now() END, location_method = 'gps',
        ip_country = $6, vpn_flagged_at = CASE WHEN $7 THEN now() ELSE vpn_flagged_at END
      WHERE id = $1`,
     [req.user.id, lat, lng, accuracy != null ? Math.round(accuracy) : null, gps, ipc, mismatch, s.vpn_policy],

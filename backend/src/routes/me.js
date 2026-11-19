@@ -12,7 +12,7 @@ import { getCountry } from '../services/countries.js';
 import { cityAt, isPointInCountry } from '../services/geocode.js';
 import { clearRefreshCookie, revokeAllForUser } from '../services/tokens.js';
 import { deriveSettings, loadUser, nextCountryChangeAt, serializeMe, verifyCityRef } from '../services/users.js';
-import { assertLiveLocation, recordLocation } from '../services/location.js';
+import { assertLiveLocation, recordFallbackLocation, recordLocation } from '../services/location.js';
 import { settings } from '../services/settings.js';
 
 export const meRouter = Router();
@@ -59,6 +59,19 @@ meRouter.post(
     const countryCode = await recordLocation(req, req.body);
     const user = await loadUser(req.user.id);
     res.json({ countryCode, user: await serializeMe(user) });
+  },
+);
+
+// When location access is blocked: the connection's country (or, if that is
+// unknown, the user's own choice) stands in for the live location.
+meRouter.post(
+  '/location/fallback',
+  validate({ body: z.object({ countryCode: countryCode.optional() }) }),
+  async (req, res) => {
+    if (req.body.countryCode) await requireEnabledCountry(req.body.countryCode);
+    const r = await recordFallbackLocation(req, req.body.countryCode);
+    const user = await loadUser(req.user.id);
+    res.json({ ...r, user: await serializeMe(user) });
   },
 );
 

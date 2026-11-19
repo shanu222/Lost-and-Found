@@ -45,6 +45,27 @@ describe('live location', () => {
     expect(clientIp(req({ 'x-forwarded-for': '39.40.1.2, 76.76.21.9' }))).toBe('10.0.0.9'); // not via Vercel: trusted-proxy rules
   });
 
+  it('location blocked: the connection country decides, and can not be overridden', async () => {
+    const s = await signIn(freshEmail('PK'), 'PK');
+    const viaIp = await s.agent.post('/api/me/location/fallback').set(auth(s.token)).set('cf-ipcountry', 'PK').send({}).expect(200);
+    expect(viaIp.body).toMatchObject({ countryCode: 'PK', method: 'ip' });
+    const lie = await s.agent.post('/api/me/location/fallback').set(auth(s.token)).set('cf-ipcountry', 'PK').send({ countryCode: 'GB' });
+    expect(lie.status).toBe(403);
+    expect(lie.body.error.code).toBe('COUNTRY_NOT_CONNECTION');
+    const done = await s.agent.post('/api/me/onboarding/country').set(auth(s.token)).send({}).expect(200);
+    expect(done.body.user.countryCode).toBe('PK');
+  });
+
+  it('location blocked and connection country unknown: the user chooses', async () => {
+    const s = await signIn(freshEmail('AE'), 'AE');
+    const none = await s.agent.post('/api/me/location/fallback').set(auth(s.token)).send({});
+    expect(none.body.error.code).toBe('COUNTRY_REQUIRED');
+    const picked = await s.agent.post('/api/me/location/fallback').set(auth(s.token)).send({ countryCode: 'AE' }).expect(200);
+    expect(picked.body).toMatchObject({ countryCode: 'AE', method: 'manual' });
+    const done = await s.agent.post('/api/me/onboarding/country').set(auth(s.token)).send({}).expect(200);
+    expect(done.body.user).toMatchObject({ countryCode: 'AE', currency: 'AED' });
+  });
+
   it('rejects imprecise locations', async () => {
     const s = await signIn(freshEmail('PK'), 'PK');
     const res = await s.agent.post('/api/me/location').set(auth(s.token)).send({ lat: 33.7, lng: 73.05, accuracy: 500000 });
