@@ -280,7 +280,7 @@
     "ALREADY_ADMIN": "This user is an admin.",
     "LOCATION_REQUIRED": "Please share your live location to continue.",
     "LOCATION_COUNTRY_MISMATCH": "Your live location is in a different country. You can only do this in the country you are in.",
-    "VPN_DETECTED": "Your connection appears to come from another country. Turn off any VPN or proxy and try again.",
+    "VPN_DETECTED": "Your location and your internet connection are in different countries. Turn off any VPN, proxy or location-changing app and try again.",
     "LOCATION_INACCURATE": "Your location isn't precise enough. Turn on precise location / GPS and try again.",
     "LOCATION_INVALID": "That location isn't valid.",
     "LOCATION_UNKNOWN": "We couldn't tell which country you're in. Try again with precise location on.",
@@ -1119,7 +1119,8 @@
       "firebase_api_key": "Firebase apiKey",
       "firebase_auth_domain": "Firebase authDomain",
       "firebase_project_id": "Firebase projectId",
-      "firebase_app_id": "Firebase appId"
+      "firebase_app_id": "Firebase appId",
+      "google_client_id": "Google client ID (for the Sign in with Google button)"
     },
     "options": {
       "block": "Block",

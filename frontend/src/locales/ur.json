@@ -280,7 +280,7 @@
     "ALREADY_ADMIN": "یہ صارف ایڈمن ہے۔",
     "LOCATION_REQUIRED": "جاری رکھنے کے لیے براہ کرم اپنا لائیو مقام شیئر کریں۔",
     "LOCATION_COUNTRY_MISMATCH": "آپ کا لائیو مقام کسی دوسرے ملک میں ہے۔ آپ یہ صرف اسی ملک میں کر سکتے ہیں جہاں آپ موجود ہیں۔",
-    "VPN_DETECTED": "آپ کا کنکشن کسی دوسرے ملک سے آتا دکھائی دیتا ہے۔ کوئی بھی VPN یا پراکسی بند کر کے دوبارہ کوشش کریں۔",
+    "VPN_DETECTED": "آپ کی لوکیشن اور انٹرنیٹ کنکشن مختلف ممالک میں ہیں۔ کوئی بھی VPN، پراکسی یا لوکیشن بدلنے والی ایپ بند کر کے دوبارہ کوشش کریں۔",
     "LOCATION_INACCURATE": "آپ کا مقام کافی درست نہیں۔ درست مقام / GPS آن کر کے دوبارہ کوشش کریں۔",
     "LOCATION_INVALID": "یہ مقام درست نہیں۔",
     "LOCATION_UNKNOWN": "ہم معلوم نہیں کر سکے کہ آپ کس ملک میں ہیں۔ درست مقام آن کر کے دوبارہ کوشش کریں۔",
@@ -1119,7 +1119,8 @@
       "firebase_api_key": "Firebase apiKey",
       "firebase_auth_domain": "Firebase authDomain",
       "firebase_project_id": "Firebase projectId",
-      "firebase_app_id": "Firebase appId"
+      "firebase_app_id": "Firebase appId",
+      "google_client_id": "Google کلائنٹ ID (Sign in with Google بٹن کے لیے)"
     },
     "options": {
       "block": "روکیں",

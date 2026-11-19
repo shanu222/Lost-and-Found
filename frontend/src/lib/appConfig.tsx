@@ -28,6 +28,7 @@ export interface AppConfig {
   firebase_auth_domain: string;
   firebase_project_id: string;
   firebase_app_id: string;
+  google_client_id: string;
   vapid_public_key: string;
   translation_available: boolean;
   google_signin_available: boolean;
@@ -39,7 +40,7 @@ const DEFAULTS: AppConfig = {
   maintenance_mode: false, maintenance_message: '', announcement: '', announcement_level: 'info', support_email: '',
   registration_open: true, min_app_version: '1.0.0', google_signin_enabled: true, translation_enabled: true, push_enabled: true,
   travel_mode_enabled: true, require_live_location: true, location_max_age_hours: 24, max_posts_per_day: 10, max_claims_per_day: 3,
-  claim_expiry_days: 7, travel_days: 30, country_change_cooldown_days: 30, firebase_api_key: '', firebase_auth_domain: '', firebase_project_id: '', firebase_app_id: '', vapid_public_key: '',
+  claim_expiry_days: 7, travel_days: 30, country_change_cooldown_days: 30, firebase_api_key: '', firebase_auth_domain: '', firebase_project_id: '', firebase_app_id: '', google_client_id: '', vapid_public_key: '',
   translation_available: false, google_signin_available: false, email_signin_available: false, push_available: false,
 };
 

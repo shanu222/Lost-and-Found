@@ -1,30 +1,143 @@
-// "Continue with Google" through Firebase Authentication (popup).
-import { useEffect, useState } from 'react';
+// "Continue with Google".
+// Preferred: Google's own Sign in with Google button (Google Identity
+// Services). It returns a Google ID token, which Firebase signs in with
+// directly — no popup window, redirect or hidden iframe for browsers to block.
+// Fallback (no OAuth client ID configured): Firebase's popup flow.
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { completeRedirectSignIn, firebaseErrorKey, preloadFirebase, signInWithGoogle } from '../lib/firebase';
+import { useAppConfig } from '../lib/appConfig';
+import { completeRedirectSignIn, firebaseErrorKey, preloadFirebase, signInWithGoogle, signInWithGoogleIdToken } from '../lib/firebase';
 import type { SessionResponse } from '../lib/types';
 import { useErrorMessage } from '../lib/useErrorMessage';
 import { Alert } from './ui';
 
+type GoogleId = {
+  accounts: {
+    id: {
+      initialize: (o: Record<string, unknown>) => void;
+      renderButton: (el: HTMLElement, o: Record<string, unknown>) => void;
+      cancel: () => void;
+    };
+  };
+};
+declare global {
+  interface Window {
+    google?: GoogleId;
+  }
+}
+
+let gisScript: Promise<GoogleId> | null = null;
+function loadGis(): Promise<GoogleId> {
+  gisScript ??= new Promise((resolve, reject) => {
+    if (window.google?.accounts?.id) return resolve(window.google);
+    const s = document.createElement('script');
+    s.src = 'https://accounts.google.com/gsi/client';
+    s.async = true;
+    s.onload = () => (window.google ? resolve(window.google) : reject(new Error('gis')));
+    s.onerror = () => {
+      gisScript = null;
+      reject(new Error('gis'));
+    };
+    document.head.appendChild(s);
+  });
+  return gisScript;
+}
+
 export function GoogleButton({ onSession }: { onSession: (s: SessionResponse) => void }) {
-  const { t, i18n } = useTranslation();
+  const { config } = useAppConfig();
+  return config.google_client_id ? (
+    <GisButton clientId={config.google_client_id} onSession={onSession} />
+  ) : (
+    <PopupButton onSession={onSession} />
+  );
+}
+
+function useSignInErrors() {
+  const { t } = useTranslation();
   const errorMessage = useErrorMessage();
+  return (err: unknown) => {
+    const key = firebaseErrorKey(err);
+    return key ? t(key) : errorMessage(err);
+  };
+}
+
+function GisButton({ clientId, onSession }: { clientId: string; onSession: (s: SessionResponse) => void }) {
+  const { t, i18n } = useTranslation();
+  const describe = useSignInErrors();
+  const slot = useRef<HTMLDivElement>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [unavailable, setUnavailable] = useState(false);
+  const onSessionRef = useRef(onSession);
+  onSessionRef.current = onSession;
+
+  useEffect(() => {
+    preloadFirebase();
+    let alive = true;
+    loadGis()
+      .then((google) => {
+        if (!alive || !slot.current) return;
+        google.accounts.id.initialize({
+          client_id: clientId,
+          ux_mode: 'popup',
+          use_fedcm_for_button: true,
+          itp_support: true,
+          callback: async ({ credential }: { credential?: string }) => {
+            if (!credential) return;
+            setError(null);
+            setBusy(true);
+            try {
+              onSessionRef.current(await signInWithGoogleIdToken(credential, i18n.language));
+            } catch (err) {
+              setError(describe(err));
+              setBusy(false);
+            }
+          },
+        });
+        const width = Math.min(400, Math.max(240, Math.round(slot.current.getBoundingClientRect().width)));
+        google.accounts.id.renderButton(slot.current, {
+          type: 'standard',
+          theme: 'outline',
+          size: 'large',
+          text: 'continue_with',
+          shape: 'pill',
+          logo_alignment: 'center',
+          width,
+          locale: i18n.language,
+        });
+      })
+      .catch(() => alive && setUnavailable(true));
+    return () => {
+      alive = false;
+      window.google?.accounts.id.cancel();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clientId, i18n.language]);
+
+  if (unavailable) return <PopupButton onSession={onSession} />;
+  return (
+    <div className="stack" style={{ ['--gap' as string]: '8px' }}>
+      <div ref={slot} className="gis-slot" aria-busy={busy || undefined} />
+      {busy && <p className="small muted" style={{ margin: 0, textAlign: 'center' }} role="status">{t('signIn.signingIn')}</p>}
+      {error && <Alert>{error}</Alert>}
+    </div>
+  );
+}
+
+function PopupButton({ onSession }: { onSession: (s: SessionResponse) => void }) {
+  const { t, i18n } = useTranslation();
+  const describe = useSignInErrors();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     preloadFirebase();
-    // Coming back from the redirect fallback.
     let cancelled = false;
     completeRedirectSignIn()
       .then((session) => {
         if (session && !cancelled) onSession(session);
       })
-      .catch((err) => {
-        if (cancelled) return;
-        const key = firebaseErrorKey(err);
-        setError(key ? t(key) : errorMessage(err));
-      });
+      .catch((err) => !cancelled && setError(describe(err)));
     return () => {
       cancelled = true;
     };
@@ -38,7 +151,7 @@ export function GoogleButton({ onSession }: { onSession: (s: SessionResponse) =>
       onSession(await signInWithGoogle(i18n.language));
     } catch (err) {
       const key = firebaseErrorKey(err);
-      if (key !== 'firebase.cancelled') setError(key ? t(key) : errorMessage(err));
+      if (key !== 'firebase.cancelled') setError(describe(err));
       setBusy(false);
     }
   };

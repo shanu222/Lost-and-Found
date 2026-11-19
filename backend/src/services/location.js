@@ -2,8 +2,8 @@
 //
 // * The browser sends its live GPS position; the server reverse-geocodes it
 //   (OpenStreetMap) to a country. A VPN changes the IP address, not the GPS.
-// * We also look up the country of the IP address (CDN header, or ipinfo.io
-//   when a token is set). If IP and GPS countries differ, that's a VPN/proxy
+// * We also look up the country of the IP address (CDN header, ipinfo.io
+//   when a token is set, otherwise the free country.is service). If IP and GPS countries differ, that's a VPN/proxy
 //   signal: blocked, flagged or ignored according to `vpn_policy`.
 // * Posting, claiming and changing country need a FRESH check
 //   (`location_max_age_hours`, default 24 h) from inside the right country.
@@ -26,19 +26,35 @@ export async function ipCountry(req) {
   const ip = req.ip?.replace(/^::ffff:/, '');
   if (isPrivateIp(ip)) return null;
   const s = await settings();
-  if (!s.ipinfo_token) return null;
   const hit = ipCache.get(ip);
   if (hit && hit.exp > Date.now()) return hit.cc;
-  try {
-    const res = await fetch(`https://api.ipinfo.io/lite/${encodeURIComponent(ip)}?token=${encodeURIComponent(s.ipinfo_token)}`, { signal: AbortSignal.timeout(4000) });
-    const j = res.ok ? await res.json() : {};
-    const cc = j.country_code ? String(j.country_code).toUpperCase() : null;
-    if (ipCache.size > 5000) ipCache.clear();
-    ipCache.set(ip, { cc, exp: Date.now() + 864e5 });
-    return cc;
-  } catch {
-    return null;
+  // ipinfo.io when a token is set; otherwise country.is (free, no key).
+  const lookups = [
+    s.ipinfo_token && (async () => {
+      const res = await fetch(`https://api.ipinfo.io/lite/${encodeURIComponent(ip)}?token=${encodeURIComponent(s.ipinfo_token)}`, { signal: AbortSignal.timeout(4000) });
+      const j = res.ok ? await res.json() : {};
+      return j.country_code;
+    }),
+    async () => {
+      const res = await fetch(`https://api.country.is/${encodeURIComponent(ip)}`, { signal: AbortSignal.timeout(4000) });
+      const j = res.ok ? await res.json() : {};
+      return j.country;
+    },
+  ].filter(Boolean);
+  for (const lookup of lookups) {
+    try {
+      const raw = await lookup();
+      if (raw && /^[A-Z]{2}$/i.test(raw)) {
+        const cc = String(raw).toUpperCase();
+        if (ipCache.size > 5000) ipCache.clear();
+        ipCache.set(ip, { cc, exp: Date.now() + 864e5 });
+        return cc;
+      }
+    } catch {
+      /* try the next source */
+    }
   }
+  return null;
 }
 
 /**

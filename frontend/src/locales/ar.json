@@ -300,7 +300,7 @@
     "ALREADY_ADMIN": "هذا المستخدم مسؤول.",
     "LOCATION_REQUIRED": "يُرجى مشاركة موقعك المباشر للمتابعة.",
     "LOCATION_COUNTRY_MISMATCH": "موقعك المباشر في بلد آخر. يمكنك فعل ذلك فقط في البلد الذي توجد فيه.",
-    "VPN_DETECTED": "يبدو أن اتصالك يأتي من بلد آخر. أوقف أي VPN أو وكيل وحاول مجددًا.",
+    "VPN_DETECTED": "موقعك واتصالك بالإنترنت في بلدين مختلفين. أوقف أي VPN أو وكيل أو تطبيق لتغيير الموقع وحاول مجددًا.",
     "LOCATION_INACCURATE": "موقعك ليس دقيقًا بما يكفي. شغّل الموقع الدقيق / GPS وحاول مجددًا.",
     "LOCATION_INVALID": "هذا الموقع غير صالح.",
     "LOCATION_UNKNOWN": "تعذّر تحديد البلد الذي أنت فيه. حاول مجددًا مع تشغيل الموقع الدقيق.",
@@ -1179,7 +1179,8 @@
       "firebase_api_key": "Firebase apiKey",
       "firebase_auth_domain": "Firebase authDomain",
       "firebase_project_id": "Firebase projectId",
-      "firebase_app_id": "Firebase appId"
+      "firebase_app_id": "Firebase appId",
+      "google_client_id": "معرّف عميل Google (لزر تسجيل الدخول عبر Google)"
     },
     "options": {
       "block": "حظر",

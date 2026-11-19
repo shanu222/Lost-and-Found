@@ -2352,3 +2352,14 @@ input[type='range'] {
 .legal__links a {
   color: var(--harbour-700);
 }
+
+/* Google's own Sign in with Google button */
+.gis-slot {
+  display: flex;
+  justify-content: center;
+  min-height: 44px;
+}
+.gis-slot[aria-busy='true'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

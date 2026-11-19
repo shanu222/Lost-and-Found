@@ -65,6 +65,10 @@ export const DEFINITIONS = {
   firebase_auth_domain: S('signin', '', { public: true }),
   firebase_project_id: S('signin', '', { public: true }),
   firebase_app_id: S('signin', '', { public: true }),
+  // OAuth client ID (Google Cloud → Credentials → "Web client (auto created by
+  // Google Service)"). With it, the app uses Google's own "Sign in with Google"
+  // button and hands the Google token to Firebase — no popup or redirect.
+  google_client_id: S('signin', '', { public: true }),
 
   // ---- AI (translation + moderation)
   translate_provider: E('ai', 'none', ['none', 'ai', 'google', 'deepl']),

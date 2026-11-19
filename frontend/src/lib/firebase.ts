@@ -45,9 +45,10 @@ async function firebase() {
         projectId: c.firebase_project_id,
         appId: c.firebase_app_id || undefined,
       });
+      // No popup/redirect resolver up front: it loads Google's hidden iframe,
+      // which only the popup/redirect fallback needs (passed per call below).
       const auth = m.initializeAuth(app, {
         persistence: [m.indexedDBLocalPersistence, m.browserLocalPersistence],
-        popupRedirectResolver: m.browserPopupRedirectResolver,
       });
       return { auth, m };
     })();
@@ -87,17 +88,27 @@ export async function signInWithGoogle(language: string) {
   const { auth, m } = sdk;
   auth.languageCode = language;
   try {
-    const cred = await m.signInWithPopup(auth, googleProvider(m));
+    const cred = await m.signInWithPopup(auth, googleProvider(m), m.browserPopupRedirectResolver);
     return exchange(cred.user, language);
   } catch (err) {
     // Pop-up blocked (strict browsers, some in-app browsers): use a full-page redirect.
     if ((err as { code?: string })?.code === 'auth/popup-blocked') {
       sessionStorage.setItem('fb_redirect_lang', language);
-      await m.signInWithRedirect(auth, googleProvider(m));
+      await m.signInWithRedirect(auth, googleProvider(m), m.browserPopupRedirectResolver);
       return new Promise<never>(() => undefined); // the page navigates away
     }
     throw err;
   }
+}
+
+/**
+ * Google's own "Sign in with Google" button returns a Google ID token; Firebase
+ * signs in with it directly (a plain HTTPS call — no popup, redirect or iframe).
+ */
+export async function signInWithGoogleIdToken(idToken: string, language: string) {
+  const { auth, m } = ready ?? (await firebase());
+  const cred = await m.signInWithCredential(auth, m.GoogleAuthProvider.credential(idToken));
+  return exchange(cred.user, language);
 }
 
 /** Finishes a redirect sign-in when the user comes back to /signin. */
@@ -107,7 +118,7 @@ export async function completeRedirectSignIn(): Promise<SessionResponse | null> 
   if (!language) return null;
   sessionStorage.removeItem('fb_redirect_lang');
   const { auth, m } = await firebase();
-  const result = await m.getRedirectResult(auth);
+  const result = await m.getRedirectResult(auth, m.browserPopupRedirectResolver);
   return result?.user ? exchange(result.user, language) : null;
 }
 

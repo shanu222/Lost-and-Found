@@ -33,7 +33,7 @@ export default function Legal({ doc }: { doc: 'terms' | 'privacy' }) {
     if (docs) document.title = `${docs[doc].title} · FoundBack`;
   }, [docs, doc]);
 
-  const contact = config.support_email || 'returns@foundback.sustainablesolution360.com';
+  const contact = config.support_email || 'shahnawaz@sustainablesolution360.com';
   const d = docs?.[doc];
 
   return (
