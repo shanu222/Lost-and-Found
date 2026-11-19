@@ -89,7 +89,8 @@
       "selected": "تم اختيار {{country}}",
       "liveTitle": "أين أنت الآن؟",
       "liveBody": "شارك موقعك المباشر. سيُحدَّد بلدك منه، وسترى الأغراض وتطالب بها هناك فقط.",
-      "continueIn": "المتابعة في {{country}}"
+      "continueIn": "المتابعة في {{country}}",
+      "saving": "جارٍ إعداد FoundBack لـ {{country}}…"
     },
     "city": {
       "title": "في أي مدينة أنت؟",

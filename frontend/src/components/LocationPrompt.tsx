@@ -1,7 +1,7 @@
 // "Share your live location" panel. FoundBack decides your country from your
 // device's GPS (a VPN can't change it), so each person only ever acts in the
 // country they are really in.
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/AuthProvider';
 import { countryName } from '../lib/format';
@@ -10,7 +10,7 @@ import { useErrorMessage } from '../lib/useErrorMessage';
 import { PinIcon } from './Icons';
 import { Alert, Button } from './ui';
 
-export function LocationPrompt({ onVerified, compact }: { onVerified?: (countryCode: string) => void; compact?: boolean }) {
+export function LocationPrompt({ onVerified, compact, auto }: { onVerified?: (countryCode: string) => void; compact?: boolean; auto?: boolean }) {
   const { t } = useTranslation();
   const { user, setUser } = useAuth();
   const errorMessage = useErrorMessage();
@@ -32,6 +32,16 @@ export function LocationPrompt({ onVerified, compact }: { onVerified?: (countryC
       setBusy(false);
     }
   };
+
+  // auto: ask for the location as soon as the screen opens (the browser shows
+  // its permission prompt once; afterwards it is silent).
+  const started = useRef(false);
+  useEffect(() => {
+    if (!auto || started.current || country) return;
+    started.current = true;
+    void share();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [auto]);
 
   return (
     <div className={`location-prompt ${compact ? 'location-prompt--compact' : ''}`}>

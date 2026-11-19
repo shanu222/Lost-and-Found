@@ -1,7 +1,7 @@
 // Two quick steps: country (detected from live location; the city follows
 // from it automatically) → language & name.
 // Every step saves to the server immediately, so the user can leave and resume.
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
@@ -29,6 +29,7 @@ function firstIncomplete(user: Me): Step {
 export default function Onboarding() {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { config } = useAppConfig();
   const [step, setStep] = useState<Step>(() => (user ? firstIncomplete(user) : 'country'));
   if (!user) return null;
   const index = STEPS.indexOf(step);
@@ -52,7 +53,7 @@ export default function Onboarding() {
       </ol>
       <div className="panel">
         {step === 'country' && <CountryStep onNext={() => go('language')} />}
-        {step === 'language' && <LanguageStep onBack={() => go('country')} />}
+        {step === 'language' && <LanguageStep onBack={config.require_live_location ? undefined : () => go('country')} />}
       </div>
     </main>
   );
@@ -72,6 +73,7 @@ function LiveCountryStep({ onNext }: { onNext: () => void }) {
   const [detected, setDetected] = useState<string | null>(user?.location.fresh ? user.location.countryCode : null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const autoSaved = useRef(false);
 
   const save = async () => {
     setBusy(true);
@@ -88,19 +90,31 @@ function LiveCountryStep({ onNext }: { onNext: () => void }) {
     }
   };
 
+  // The country is automatic: as soon as the live location is known, save it
+  // and move on. The button stays only as a retry after an error.
+  useEffect(() => {
+    if (!detected || autoSaved.current) return;
+    autoSaved.current = true;
+    void save();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [detected]);
+
   return (
     <section className="stack" aria-labelledby="step-title">
       <div>
         <h2 id="step-title">{t('onboarding.country.liveTitle')}</h2>
         <p className="muted" style={{ margin: 0 }}>{t('onboarding.country.liveBody')}</p>
       </div>
-      <LocationPrompt onVerified={setDetected} />
+      <LocationPrompt auto onVerified={setDetected} />
+      {busy && <p className="small muted" role="status" style={{ margin: 0 }}>{t('onboarding.country.saving', { country: detected ? countryName(detected) : '' })}</p>}
       {error && <Alert>{error}</Alert>}
-      <div className="step-actions">
-        <Button onClick={save} loading={busy} disabled={!detected}>
-          {detected ? t('onboarding.country.continueIn', { country: countryName(detected) }) : t('app.continue')}
-        </Button>
-      </div>
+      {error && detected && (
+        <div className="step-actions">
+          <Button onClick={save} loading={busy}>
+            {t('onboarding.country.continueIn', { country: countryName(detected) })}
+          </Button>
+        </div>
+      )}
     </section>
   );
 }
@@ -165,7 +179,7 @@ function PickCountryStep({ onNext }: { onNext: () => void }) {
 }
 
 // ---------------------------------------------------------------------------
-function LanguageStep({ onBack }: { onBack: () => void }) {
+function LanguageStep({ onBack }: { onBack?: () => void }) {
   const { t, i18n } = useTranslation();
   const { user, setUser, changeLanguage } = useAuth();
   const errorMessage = useErrorMessage();
@@ -234,9 +248,11 @@ function LanguageStep({ onBack }: { onBack: () => void }) {
 
       {error && <Alert>{error}</Alert>}
       <div className="step-actions">
-        <Button variant="ghost" onClick={onBack}>
-          {t('app.back')}
-        </Button>
+        {onBack && (
+          <Button variant="ghost" onClick={onBack}>
+            {t('app.back')}
+          </Button>
+        )}
         <Button variant="accent" onClick={finish} loading={busy} disabled={name.trim().length < 2}>
           {t('onboarding.language.finish')}
         </Button>

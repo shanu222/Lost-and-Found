@@ -85,7 +85,8 @@
       "selected": "{{country}} selected",
       "liveTitle": "Where are you right now?",
       "liveBody": "Share your live location. Your country is set from it, and you'll see and claim items only there.",
-      "continueIn": "Continue in {{country}}"
+      "continueIn": "Continue in {{country}}",
+      "saving": "Setting up FoundBack for {{country}}…"
     },
     "city": {
       "title": "Which city are you in?",
