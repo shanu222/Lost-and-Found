@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { deleteFirebaseLogin } from '../lib/firebase';
 import { PhotoPicker } from '../components/PhotoPicker';
 import { disablePush, enablePush, pushStatus } from '../lib/push';
 import { formData } from '../lib/api';
@@ -91,7 +92,7 @@ export default function Settings() {
           <div className="settings-row">
             <span className="settings-row__label">{t('settings.signInWith')}</span>
             <span className="settings-row__value">
-              {[user.signInMethods?.google && 'Google', user.signInMethods?.email && t('settings.emailCode')].filter(Boolean).join(' · ') || '—'}
+              {user.signInMethod === 'google' ? 'Google' : user.signInMethod === 'email' ? t('settings.emailPassword') : user.signInMethod === 'staff' ? t('settings.staffLogin') : '—'}
             </span>
           </div>
         </section>
@@ -277,6 +278,7 @@ function DeleteAccountDialog({ open, onClose }: { open: boolean; onClose: () => 
     setError(null);
     try {
       await api('/me', { method: 'DELETE', body: { confirm: 'DELETE' } });
+      await deleteFirebaseLogin();
       await signOut();
     } catch (err) {
       setError(errorMessage(err));

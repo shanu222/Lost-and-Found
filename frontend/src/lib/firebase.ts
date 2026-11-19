@@ -161,6 +161,20 @@ export async function sendPasswordReset(email: string, language: string) {
   await m.sendPasswordResetEmail(auth, email, actionSettings());
 }
 
+/**
+ * After the FoundBack account is deleted, also delete the Firebase login so
+ * the email is free again. Best effort: Firebase may require a recent
+ * sign-in; if so, signing in again simply creates a fresh FoundBack account.
+ */
+export async function deleteFirebaseLogin() {
+  try {
+    const { auth, m } = ready ?? (await firebase());
+    if (auth.currentUser) await m.deleteUser(auth.currentUser);
+  } catch {
+    /* ignore */
+  }
+}
+
 /** Signs out of Firebase too, so the next person on this device starts fresh. */
 export async function firebaseSignOut() {
   if (!loaded) return;

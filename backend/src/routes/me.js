@@ -270,7 +270,10 @@ meRouter.delete('/', validate({ body: z.object({ confirm: z.literal('DELETE') })
     // claims and the audit trail stay consistent for other users.
     await db.query(
       `UPDATE users SET status = 'deleted', deleted_at = now(), display_name = NULL, email = NULL, google_sub = NULL,
-              phone_enc = NULL, phone_hash = NULL, phone_last4 = NULL, home_lat = NULL, home_lng = NULL, updated_at = now()
+              firebase_uid = NULL, email_verified = false, email_verified_at = NULL,
+              phone_enc = NULL, phone_hash = NULL, phone_last4 = NULL, home_lat = NULL, home_lng = NULL,
+              location_lat = NULL, location_lng = NULL, location_accuracy_m = NULL, location_country = NULL,
+              location_verified_at = NULL, ip_country = NULL, updated_at = now()
        WHERE id = $1`,
       [id],
     );

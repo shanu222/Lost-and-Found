@@ -2340,6 +2340,7 @@ input[type='range'] {
 .legal__contact a {
   color: var(--harbour-500);
   font-weight: 600;
+  overflow-wrap: anywhere;
 }
 .legal__links {
   display: flex;

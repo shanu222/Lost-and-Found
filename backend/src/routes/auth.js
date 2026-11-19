@@ -70,7 +70,11 @@ authRouter.post(
         throw forbidden('ACCOUNT_CONFLICT', 'This email is linked to a different sign-in. Please contact support.');
       }
     }
-    if (found?.status === 'deleted') throw forbidden('ACCOUNT_DELETED', 'This account was deleted.');
+    // A deleted account is gone: signing in again starts a brand-new account.
+    if (found?.status === 'deleted') {
+      await query('UPDATE users SET firebase_uid = NULL, email = NULL WHERE id = $1', [found.id]);
+      found = undefined;
+    }
     assertNotStaff(found);
 
     let userId = found?.id;
@@ -78,17 +82,17 @@ authRouter.post(
     if (!userId) {
       if (!s.registration_open) throw forbidden('REGISTRATION_CLOSED', 'New sign-ups are paused. Please try again later.');
       const { rows } = await query(
-        `INSERT INTO users (firebase_uid, email, email_verified, email_verified_at, display_name, language, text_dir)
-         VALUES ($1,$2,true,now(),$3,$4,$5) RETURNING id`,
-        [fb.uid, fb.email, fb.name ? fb.name.slice(0, 40) : null, req.body.language, textDirFor(req.body.language)],
+        `INSERT INTO users (firebase_uid, email, email_verified, email_verified_at, display_name, language, text_dir, auth_provider)
+         VALUES ($1,$2,true,now(),$3,$4,$5,$6) RETURNING id`,
+        [fb.uid, fb.email, fb.name ? fb.name.slice(0, 40) : null, req.body.language, textDirFor(req.body.language), fb.provider],
       );
       userId = rows[0].id;
       created = true;
     } else {
       await query(
-        `UPDATE users SET firebase_uid = $2, email = $3, email_verified = true,
+        `UPDATE users SET firebase_uid = $2, email = $3, email_verified = true, auth_provider = $4,
                 email_verified_at = COALESCE(email_verified_at, now()) WHERE id = $1`,
-        [userId, fb.uid, fb.email],
+        [userId, fb.uid, fb.email, fb.provider],
       );
     }
     await audit({ actorId: userId, action: `auth.${created ? 'signup' : 'signin'}_${isGoogle ? 'google' : 'email'}`, ip: req.ip });

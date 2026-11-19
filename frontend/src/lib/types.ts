@@ -35,7 +35,7 @@ export interface Me {
   displayName: string | null;
   email: string | null;
   emailVerified: boolean;
-  signInMethods: { email: boolean; google: boolean };
+  signInMethod: 'google' | 'email' | 'staff' | null;
   countryCode: string | null;
   country: CountrySummary | null;
   city: City | null;

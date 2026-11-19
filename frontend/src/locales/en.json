@@ -199,9 +199,10 @@
     "changeCountryLive": "Your new country is set from your live location, so share it from the country you now live in.",
     "email": "Email",
     "signInWith": "Sign in with",
-    "emailCode": "Email code",
     "termsLink": "Terms of Use",
-    "privacyLink": "Privacy Policy"
+    "privacyLink": "Privacy Policy",
+    "emailPassword": "Email & password",
+    "staffLogin": "Staff sign-in"
   },
   "units": {
     "km": "{{value}} km",

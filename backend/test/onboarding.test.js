@@ -133,6 +133,16 @@ describe('account', () => {
     const { rows } = await pool.query('SELECT email, display_name, status FROM users WHERE id = $1', [s.user.id]);
     expect(rows[0]).toEqual({ email: null, display_name: null, status: 'deleted' });
   });
+
+  it('after deleting, signing in again with the same email starts a new account', async () => {
+    const email = freshEmail('PK');
+    const first = await signIn(email, 'PK');
+    await first.agent.delete('/api/me').set(auth(first.token)).send({ confirm: 'DELETE' }).expect(204);
+    const again = await signIn(email, 'PK'); // same Firebase account (same uid)
+    expect(again.status).toBe(201);
+    expect(again.user.id).not.toBe(first.user.id);
+    expect(again.user.onboarding.completed).toBe(false);
+  });
 });
 
 export { onboard };

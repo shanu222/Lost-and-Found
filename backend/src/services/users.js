@@ -61,7 +61,7 @@ export async function serializeMe(user) {
     displayName: user.display_name,
     email: user.email,
     emailVerified: Boolean(user.email_verified),
-    signInMethods: { email: Boolean(user.email && user.email_verified), google: Boolean(user.google_sub) },
+    signInMethod: user.auth_provider === 'google.com' ? 'google' : user.auth_provider === 'password' ? 'email' : user.password_hash ? 'staff' : null,
     countryCode: user.country_code?.trim() ?? null,
     country: country ? countrySummary(country) : null,
     city: user.city_id ? { id: Number(user.city_id), name: user.city_name, region: user.city_region, lat: user.city_lat, lng: user.city_lng } : null,
