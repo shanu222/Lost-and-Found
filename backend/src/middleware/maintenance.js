@@ -4,7 +4,7 @@
 import { settings } from '../services/settings.js';
 import { verifyAccessToken } from '../services/tokens.js';
 
-const ALWAYS = [/^\/health$/, /^\/meta\/app-config$/, /^\/auth\/admin\//, /^\/auth\/refresh$/, /^\/auth\/logout$/, /^\/files\//];
+const ALWAYS = [/^\/health$/, /^\/ready$/, /^\/meta\/app-config$/, /^\/auth\/admin\//, /^\/auth\/refresh$/, /^\/auth\/logout$/, /^\/files\//];
 
 export async function maintenanceGate(req, res, next) {
   try {

@@ -55,15 +55,27 @@ export function createApp() {
   app.use(express.json({ limit: '100kb' }));
   app.use(cookieParser());
 
+  // Liveness (Railway health check): 200 whenever the process is up, so the
+  // deployment goes live and this page can say what is still missing.
   app.get('/api/health', async (_req, res) => {
     if (!readiness.ready && !isTest) {
-      return res.status(503).json({ ok: false, stage: readiness.stage, error: readiness.error });
+      return res.json({ ok: false, live: true, stage: readiness.stage, error: readiness.error });
     }
     try {
       await pool.query('SELECT 1');
-      res.json({ ok: true });
+      res.json({ ok: true, live: true });
     } catch (err) {
-      res.status(503).json({ ok: false, stage: 'database', error: err.message });
+      res.json({ ok: false, live: true, stage: 'database', error: err.message });
+    }
+  });
+  // Readiness: 503 until the database is migrated and reachable.
+  app.get('/api/ready', async (_req, res) => {
+    if (!readiness.ready && !isTest) return res.status(503).json({ ready: false, stage: readiness.stage, error: readiness.error });
+    try {
+      await pool.query('SELECT 1');
+      res.json({ ready: true });
+    } catch (err) {
+      res.status(503).json({ ready: false, stage: 'database', error: err.message });
     }
   });
   // Until the database is migrated, everything else waits.

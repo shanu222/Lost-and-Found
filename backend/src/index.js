@@ -1,6 +1,6 @@
 // Entry point: listen right away, then migrate the database (retrying until it
 // is reachable) and start background jobs.
-import { env } from './config/env.js';
+import { DATABASE_MISSING_HELP, env } from './config/env.js';
 import { migrate } from './db/migrate.js';
 import { pool } from './db/pool.js';
 import { createApp } from './app.js';
@@ -27,6 +27,12 @@ function describe(err) {
 }
 
 async function boot() {
+  if (!env.DATABASE_URL) {
+    Object.assign(readiness, { stage: 'config', error: DATABASE_MISSING_HELP });
+    logger.error(`[startup] ${DATABASE_MISSING_HELP}`);
+    setInterval(() => logger.error(`[startup] ${DATABASE_MISSING_HELP}`), 60_000).unref();
+    return;
+  }
   for (let attempt = 1; ; attempt++) {
     try {
       readiness.stage = 'migrating';

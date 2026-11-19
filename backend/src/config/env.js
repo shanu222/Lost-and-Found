@@ -27,12 +27,8 @@ process.env.DATABASE_URL = resolveDatabaseUrl();
 const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().default(4000),
-  DATABASE_URL: z
-    .string()
-    .min(
-      1,
-      'DATABASE_URL is empty. On Railway: (1) add a PostgreSQL service to THIS project, (2) in this service\'s Variables use "Add Reference" → <your Postgres service> → DATABASE_URL. The name inside ${{…}} must match the Postgres service name exactly.',
-    ),
+  // Empty is allowed so the server can still start and explain the problem at /api/health.
+  DATABASE_URL: z.string().default(''),
   DATABASE_SSL: bool,
 
   // Comma-separated list of allowed browser origins (Vercel domain + previews).
@@ -85,6 +81,9 @@ if (!parsed.success) {
   for (const issue of parsed.error.issues) console.error(`  ${issue.path.join('.')}: ${issue.message}`);
   process.exit(1);
 }
+
+export const DATABASE_MISSING_HELP =
+  'DATABASE_URL is empty. On Railway: open this service → Variables → New Variable → name DATABASE_URL → Add Reference → pick your Postgres service → DATABASE_URL. Then redeploy.';
 
 export const env = parsed.data;
 export const isProd = env.NODE_ENV === 'production';
