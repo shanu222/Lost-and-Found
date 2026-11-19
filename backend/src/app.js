@@ -55,6 +55,9 @@ export function createApp() {
   app.use(express.json({ limit: '100kb' }));
   app.use(cookieParser());
 
+  // Bare API address: say what this is instead of a 404.
+  app.get('/', (_req, res) => res.json({ service: 'FoundBack API', health: '/api/health', app: env.APP_URL || null }));
+
   // Liveness (Railway health check): 200 whenever the process is up, so the
   // deployment goes live and this page can say what is still missing.
   app.get('/api/health', async (_req, res) => {
