@@ -142,7 +142,7 @@ export default function AdminSettings() {
                     {t(`adminSettings.keys.${s.key}`, { defaultValue: s.key })}
                     <span className={`source-tag ${s.source === 'admin' ? 'source-tag--admin' : ''}`}>{t(`adminSettings.source.${s.source}`)}</span>
                   </strong>
-                  <span dir="ltr">{s.key}{s.public ? ` · ${t('adminSettings.public')}` : ''}</span>
+                  {s.public && <span>{t('adminSettings.public')}</span>}
                 </label>
                 <div>{control(s)}</div>
               </div>

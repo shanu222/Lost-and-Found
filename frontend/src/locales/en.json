@@ -1032,7 +1032,7 @@
     "enterKey": "Paste the key",
     "clear": "Remove",
     "willClear": "Will be removed when you save.",
-    "public": "visible to the app",
+    "public": "Shown in the app",
     "source": {
       "admin": "Admin",
       "env": "Railway",
@@ -1044,7 +1044,7 @@
       "security": "Location & security",
       "limits": "Limits",
       "email": "Email",
-      "signin": "Google sign-in",
+      "signin": "Sign-in (Firebase)",
       "ai": "AI & translation",
       "location": "IP location",
       "push": "Push notifications",

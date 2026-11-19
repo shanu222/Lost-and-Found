@@ -2,7 +2,7 @@
 // code emailed to the staff address.
 import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { LogoMark, ShieldIcon } from '../components/Icons';
 import { Alert, Button } from '../components/ui';
@@ -15,6 +15,7 @@ type Step1 = { twoFactor: true; ticket: string; sentTo: string; devCode?: string
 export default function StaffLogin() {
   const { t } = useTranslation();
   const { acceptSession } = useAuth();
+  const navigate = useNavigate();
   const errorMessage = useErrorMessage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -30,7 +31,10 @@ export default function StaffLogin() {
     try {
       const r = await api<Step1>('/auth/admin/login', { method: 'POST', body: { email: email.trim(), password } });
       if (r.twoFactor) setTicket(r);
-      else acceptSession(r);
+      else {
+        acceptSession(r);
+        navigate('/admin', { replace: true });
+      }
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -46,6 +50,7 @@ export default function StaffLogin() {
     setError(null);
     try {
       acceptSession(await api<SessionResponse>('/auth/admin/verify', { method: 'POST', body: { ticket: ticket.ticket, code } }));
+      navigate('/admin', { replace: true });
     } catch (err) {
       setError(errorMessage(err));
       setBusy(false);

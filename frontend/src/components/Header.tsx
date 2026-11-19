@@ -9,10 +9,15 @@ import { BellIcon, ChatIcon, HomeIcon, LogoMark, SearchIcon, SettingsIcon, TagIc
 import { useUnread } from '../lib/useUnread';
 import { LanguageSwitcher } from './LanguageSwitcher';
 
+/** A staff account that isn't also a regular user (no country): admin area only. */
+const isStaffOnly = (u: { role: string; countryCode: string | null } | null) =>
+  Boolean(u && (u.role === 'admin' || u.role === 'moderator') && !u.countryCode);
+
 export function Header() {
   const { t } = useTranslation();
-  const { user } = useAuth();
-  const unread = useUnread(Boolean(user?.onboarding.completed));
+  const { user, signOut } = useAuth();
+  const staffOnly = isStaffOnly(user);
+  const unread = useUnread(Boolean(user?.onboarding.completed && user.countryCode));
   const [explain, setExplain] = useState(false);
   const popRef = useRef<HTMLDivElement>(null);
   const country = user?.country;
@@ -39,7 +44,15 @@ export function Header() {
           <LogoMark />
           <span>{t('app.name')}</span>
         </Link>
-        {user?.onboarding.completed && (
+        {staffOnly && (
+          <nav className="header__nav header__nav--staff" aria-label={t('nav.mainNavigation')}>
+            <NavLink to="/admin">{t('nav.admin')}</NavLink>
+            <button type="button" className="header__signout" onClick={() => void signOut()}>
+              {t('settings.signOut')}
+            </button>
+          </nav>
+        )}
+        {!staffOnly && user?.onboarding.completed && (
           <nav className="header__nav" aria-label={t('nav.mainNavigation')}>
             <NavLink to="/" end>
               {t('nav.home')}
@@ -54,7 +67,7 @@ export function Header() {
             {(user.role === 'admin' || user.role === 'moderator') && <NavLink to="/admin">{t('nav.admin')}</NavLink>}
           </nav>
         )}
-        {user?.onboarding.completed && (
+        {!staffOnly && user?.onboarding.completed && (
           <NavLink to="/notifications" className="icon-button header__bell" aria-label={t('nav.notificationsCount', { count: unread.notifications })}>
             <BellIcon />
             {unread.notifications > 0 && <span className="dot-count dot-count--float">{unread.notifications > 9 ? '9+' : unread.notifications}</span>}
@@ -100,7 +113,8 @@ export function Header() {
 export function TabBar() {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const unread = useUnread(Boolean(user?.onboarding.completed));
+  const unread = useUnread(Boolean(user?.onboarding.completed && user.countryCode));
+  if (isStaffOnly(user)) return null;
   return (
     <nav className="tabbar" aria-label={t('nav.mainNavigation')}>
       <NavLink to="/" end>

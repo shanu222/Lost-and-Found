@@ -2221,3 +2221,34 @@ input[type='range'] {
     bottom: 12px;
   }
 }
+
+/* Staff-only accounts: Admin + Sign out in the header (also on phones). */
+.header__nav--staff {
+  display: flex;
+  align-items: center;
+  margin-inline-start: auto;
+}
+.header__nav--staff {
+  gap: 0;
+  margin-inline-end: 4px;
+}
+.header__nav--staff a,
+.header__nav--staff button {
+  white-space: nowrap;
+  padding: 8px 8px;
+}
+.header__signout {
+  background: none;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  opacity: 0.85;
+  padding: 8px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.header__signout:hover,
+.header__signout:focus-visible {
+  opacity: 1;
+  background: rgb(255 255 255 / 0.08);
+}

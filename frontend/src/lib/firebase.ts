@@ -14,6 +14,18 @@ let loadedFor = '';
 // network download first makes them block it.
 let ready: { auth: Auth; m: FirebaseAuthModule } | null = null;
 
+/**
+ * Use our own domain as the auth domain in production: Vercel proxies
+ * /__/auth/* to Firebase, so the sign-in helper pages are first-party and
+ * redirect sign-in keeps working in browsers that partition third-party
+ * storage (Chrome, Safari, Firefox).
+ */
+function authDomainFor(configured: string) {
+  const host = window.location.host;
+  const local = /^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host);
+  return local ? configured : host;
+}
+
 export function firebaseConfigured() {
   const c = getAppConfig();
   return Boolean(c.firebase_api_key && c.firebase_auth_domain && c.firebase_project_id);
@@ -29,7 +41,7 @@ async function firebase() {
       await Promise.all(getApps().map((a) => deleteApp(a))); // project changed in admin settings
       const app = initializeApp({
         apiKey: c.firebase_api_key,
-        authDomain: c.firebase_auth_domain,
+        authDomain: authDomainFor(c.firebase_auth_domain),
         projectId: c.firebase_project_id,
         appId: c.firebase_app_id || undefined,
       });

@@ -22,6 +22,18 @@ interface AuthValue {
 
 const AuthContext = createContext<AuthValue | null>(null);
 
+const HINT = 'fb_signed_in';
+/** Remembers (not secret) that this device has a session cookie. */
+function sessionHint(set?: boolean): boolean {
+  try {
+    if (set === true) localStorage.setItem(HINT, '1');
+    else if (set === false) localStorage.removeItem(HINT);
+    return localStorage.getItem(HINT) === '1';
+  } catch {
+    return true; // storage unavailable: fall back to always trying
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<Status>('loading');
   const [user, setUserState] = useState<Me | null>(null);
@@ -37,6 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setAccessToken(s.accessToken);
       setUser(s.user);
       setStatus('signedIn');
+      sessionHint(true);
     },
     [setUser],
   );
@@ -45,10 +58,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAccessToken(null);
     setUserState(null);
     setStatus('signedOut');
+    sessionHint(false);
   }, []);
 
   useEffect(() => {
     setSessionLostHandler(clear);
+    // Visitors who have never signed in on this device have no refresh cookie:
+    // skip the call instead of producing a 401.
+    if (!sessionHint()) {
+      clear();
+      return;
+    }
     api<SessionResponse>('/auth/refresh', { method: 'POST' })
       .then(acceptSession)
       .catch(clear);

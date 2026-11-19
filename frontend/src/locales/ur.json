@@ -1032,7 +1032,7 @@
     "enterKey": "کی پیسٹ کریں",
     "clear": "ہٹائیں",
     "willClear": "محفوظ کرنے پر ہٹا دی جائے گی۔",
-    "public": "ایپ کو نظر آتی ہے",
+    "public": "ایپ میں دکھایا جاتا ہے",
     "source": {
       "admin": "ایڈمن",
       "env": "Railway",
@@ -1044,7 +1044,7 @@
       "security": "مقام اور سیکیورٹی",
       "limits": "حدود",
       "email": "ای میل",
-      "signin": "Google سائن ان",
+      "signin": "سائن اِن (Firebase)",
       "ai": "AI اور ترجمہ",
       "location": "IP مقام",
       "push": "پش اطلاعات",

@@ -2,7 +2,7 @@
 // countries assigned to them — enforced by the API.
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, NavLink, useParams } from 'react-router-dom';
+import { Link, Navigate, NavLink, useParams } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { Alert, Button, Dialog, ErrorState, LoadingState } from '../components/ui';
 import { LANGUAGES } from '../i18n/languages';
@@ -25,6 +25,7 @@ export default function Admin() {
   const [country, setCountry] = useState('');
   const { countries } = useCountries();
   const errorMessage = useErrorMessage();
+  if (!(TABS as readonly string[]).includes(tab)) return <Navigate to="/admin" replace />;
   if (me.error) return <main className="page" id="main"><ErrorState message={errorMessage(me.error)} onRetry={me.reload} /></main>;
   if (!me.data) return <main className="page" id="main"><LoadingState /></main>;
   const isAdmin = me.data.role === 'admin';

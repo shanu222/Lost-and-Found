@@ -14,7 +14,7 @@ cleanupOutdatedCaches();
 precacheAndRoute(self.__WB_MANIFEST);
 
 // SPA navigations → cached index.html (but never the API).
-registerRoute(new NavigationRoute(createHandlerBoundToURL('/index.html'), { denylist: [/^\/api\//] }));
+registerRoute(new NavigationRoute(createHandlerBoundToURL('/index.html'), { denylist: [/^\/api\//, /^\/__\//] }));
 
 // The API (and signed image URLs) must always hit the network: they are
 // private, short-lived and country-scoped.
