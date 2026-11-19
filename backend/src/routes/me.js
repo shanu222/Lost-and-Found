@@ -9,7 +9,7 @@ import { badRequest, forbidden, notFound } from '../lib/errors.js';
 import { countryCode, latitude, longitude, validate } from '../lib/validate.js';
 import { requireAuth } from '../middleware/auth.js';
 import { getCountry } from '../services/countries.js';
-import { isPointInCountry } from '../services/geocode.js';
+import { cityAt, isPointInCountry } from '../services/geocode.js';
 import { clearRefreshCookie, revokeAllForUser } from '../services/tokens.js';
 import { deriveSettings, loadUser, nextCountryChangeAt, serializeMe, verifyCityRef } from '../services/users.js';
 import { assertLiveLocation, recordLocation } from '../services/location.js';
@@ -28,6 +28,26 @@ async function requireEnabledCountry(code) {
 }
 
 meRouter.get('/', reply);
+
+/**
+ * Sets the user's city from their last live location (best effort): the city
+ * is no longer asked for — it follows from where the user actually is.
+ */
+async function autoCity(userId, countryCode) {
+  const { rows } = await query('SELECT location_lat, location_lng FROM users WHERE id = $1', [userId]);
+  const u = rows[0];
+  if (u?.location_lat == null) return;
+  const place = await cityAt(Number(u.location_lat), Number(u.location_lng));
+  if (!place || place.countryCode !== countryCode) return;
+  const city = await query(
+    `INSERT INTO cities (country_code, name, region, lat, lng, source, external_id)
+     VALUES ($1,$2,$3,$4,$5,'osm',$6)
+     ON CONFLICT (country_code, external_id) DO UPDATE SET name = EXCLUDED.name
+     RETURNING id`,
+    [countryCode, place.name, place.region, place.lat, place.lng, place.externalId],
+  );
+  await query('UPDATE users SET city_id = $2 WHERE id = $1', [userId, city.rows[0].id]);
+}
 
 // ---------------------------------------------------------------------------
 // Live location check (GPS). Decides the user's country; VPN-checked.
@@ -73,6 +93,7 @@ meRouter.post(
        WHERE id = $1`,
       [req.user.id, country.code, s.currency, s.units, s.timezone, s.locale, Boolean(changed)],
     );
+    await autoCity(req.user.id, country.code).catch(() => undefined);
     await reply(req, res);
   },
 );
@@ -204,13 +225,14 @@ meRouter.post(
       await db.query(
         `UPDATE users SET country_code = $2, currency = $3, units = $4, timezone = $5, locale = $6,
                 city_id = NULL, home_lat = NULL, home_lng = NULL,
-                onboarding_completed_at = NULL,
                 country_changed_at = now(), travel_country_code = NULL, travel_until = NULL, updated_at = now()
          WHERE id = $1`,
         [u.id, country.code, derived.currency, derived.units, derived.timezone, derived.locale],
       );
       await audit({ actorId: u.id, countryCode: country.code, action: 'user.country_change', meta: { from: req.countryCode, to: country.code }, ip: req.ip }, db);
     });
+    // The city follows the live location in the new country.
+    await autoCity(u.id, country.code).catch(() => undefined);
     await reply(req, res);
   },
 );

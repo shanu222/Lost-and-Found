@@ -170,7 +170,7 @@
     "changeCity": "Change city",
     "changeCountry": "Change country",
     "changeCountryTitle": "Change your country",
-    "changeCountryBody": "Only change this if you have moved. You'll see items in the new country only, you'll need to set your city and confirm your live location there again, and you can't change it again for 30 days.",
+    "changeCountryBody": "Only change this if you have moved. You'll see items in the new country only, your city is updated from your live location there, and you can't change it again for 30 days.",
     "changeCountryConfirm": "Move to {{country}}",
     "changeCountryCooldown": "You can change your country again on {{date}}.",
     "notifications": "Notifications",

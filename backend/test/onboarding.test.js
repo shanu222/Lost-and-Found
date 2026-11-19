@@ -74,7 +74,8 @@ describe('onboarding', () => {
     const s = await signIn(freshEmail('PK'), 'PK');
     await shareLocation(s, 'PK').expect(200);
     const res = await s.agent.post('/api/me/onboarding/complete').set(auth(s.token)).expect(400);
-    expect(res.body.error.details.missing).toEqual(expect.arrayContaining(['country', 'city', 'profile']));
+    expect(res.body.error.details.missing).toEqual(expect.arrayContaining(['country', 'profile']));
+    expect(res.body.error.details.missing).not.toContain('city'); // the city is no longer a step
   });
 
   it('completes onboarding', async () => {
@@ -112,7 +113,7 @@ describe('changing country', () => {
     await shareLocation(s, 'AE').expect(200);
     const moved = await s.agent.post('/api/me/country').set(auth(s.token)).send({ countryCode: 'AE', confirm: true }).expect(200);
     expect(moved.body.user).toMatchObject({ countryCode: 'AE', currency: 'AED', city: null });
-    expect(moved.body.user.onboarding.completed).toBe(false);
+    expect(moved.body.user.onboarding.completed).toBe(true); // moving keeps the account set up
 
     // Finish onboarding again in the new country, then try to move again.
     await pool.query('UPDATE users SET onboarding_completed_at = now() WHERE id = $1', [s.user.id]);

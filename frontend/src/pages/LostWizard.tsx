@@ -41,7 +41,7 @@ export default function LostWizard() {
   const [locating, setLocating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const index = STEPS.indexOf(step);
-  const center = user?.home ?? (user?.city ? { lat: user.city.lat, lng: user.city.lng } : { lat: 0, lng: 0 });
+  const center = user?.home ?? (user?.city ? { lat: user.city.lat, lng: user.city.lng } : user?.area ?? { lat: 0, lng: 0 });
   const homeName = user?.country ? countryName(user.country.code, user.country.name) : '';
   const travelName = user?.travel ? countryName(user.travel.countryCode) : null;
   const spaceName = travel && travelName ? travelName : homeName;

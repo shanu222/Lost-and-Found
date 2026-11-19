@@ -58,7 +58,7 @@ export default function FoundWizard() {
   const [error, setError] = useState<string | null>(null);
   const [locating, setLocating] = useState(false);
   const index = STEPS.indexOf(step);
-  const center = user?.home ?? (user?.city ? { lat: user.city.lat, lng: user.city.lng } : { lat: 0, lng: 0 });
+  const center = user?.home ?? (user?.city ? { lat: user.city.lat, lng: user.city.lng } : user?.area ?? { lat: 0, lng: 0 });
   const cName = user?.country ? countryName(user.country.code, user.country.name) : '';
 
   useEffect(() => {

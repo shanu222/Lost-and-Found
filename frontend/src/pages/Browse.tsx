@@ -21,7 +21,7 @@ export default function Browse() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const errorMessage = useErrorMessage();
-  const base = user?.home ?? (user?.city ? { lat: user.city.lat, lng: user.city.lng } : null);
+  const base = user?.home ?? (user?.city ? { lat: user.city.lat, lng: user.city.lng } : user?.area ?? null);
   const [origin, setOrigin] = useState(base);
   const [category, setCategory] = useState('');
   const [q, setQ] = useState('');

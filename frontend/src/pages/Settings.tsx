@@ -127,7 +127,7 @@ export default function Settings() {
           </div>
           <div className="settings-row">
             <span className="settings-row__label">{t('settings.city')}</span>
-            <span className="settings-row__value">{user.city?.name}</span>
+            <span className="settings-row__value">{user.city?.name ?? '—'}</span>
           </div>
           <div className="settings-row">
             <span>
@@ -225,7 +225,7 @@ function ChangeCountryDialog({ open, onClose, current, cooldownUntil }: { open: 
     try {
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
       const res = await api<{ user: Me }>('/me/country', { method: 'POST', body: { ...(live ? {} : { countryCode: targetCode }), confirm: true, timezone } });
-      setUser(res.user); // onboarding is now incomplete → the app routes to /onboarding
+      setUser(res.user); // the account stays set up; the city follows the new location
       onClose();
     } catch (err) {
       setError(errorMessage(err));

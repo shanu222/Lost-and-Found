@@ -51,8 +51,9 @@ export interface Me {
   returnsCount: number;
   points: number;
   notificationPrefs: { email: boolean; push: boolean; inapp: boolean };
-  onboarding: { completed: boolean; steps: { country: boolean; city: boolean; profile: boolean } };
+  onboarding: { completed: boolean; steps: { country: boolean; profile: boolean } };
   travel: { countryCode: string; until: string } | null;
+  area: { lat: number; lng: number } | null;
   location: { countryCode: string | null; verifiedAt: string | null; fresh: boolean; required: boolean };
   hasPassword: boolean;
   countryChangedAt: string | null;

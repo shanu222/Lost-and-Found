@@ -54,7 +54,6 @@ export async function serializeMe(user) {
   );
   const steps = {
     country: Boolean(user.country_code),
-    city: Boolean(user.city_id),
     profile: Boolean(user.display_name),
   };
   return {
@@ -66,6 +65,9 @@ export async function serializeMe(user) {
     countryCode: user.country_code?.trim() ?? null,
     country: country ? countrySummary(country) : null,
     city: user.city_id ? { id: Number(user.city_id), name: user.city_name, region: user.city_region, lat: user.city_lat, lng: user.city_lng } : null,
+    // Rough area of the last live location (~10 km), for centring the user's own
+    // maps when no city could be set. Only ever sent to the user themself.
+    area: user.location_lat != null ? { lat: Math.round(user.location_lat * 10) / 10, lng: Math.round(user.location_lng * 10) / 10 } : null,
     home: user.home_lat != null ? { lat: user.home_lat, lng: user.home_lng, radiusKm: Number(user.home_radius_km) } : null,
     language: user.language,
     timezone: user.timezone,

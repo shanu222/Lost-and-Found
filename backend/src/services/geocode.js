@@ -124,6 +124,34 @@ export async function countryAt(lat, lng) {
 }
 
 /**
+ * The town/city at (lat, lng), for setting the user's city automatically.
+ * Returns null when it can't be determined (rural area, geocoder down).
+ */
+export async function cityAt(lat, lng) {
+  const rl = lat.toFixed(2);
+  const rg = lng.toFixed(2);
+  try {
+    return await cached(key('city', rl, rg), async () => {
+      const params = new URLSearchParams({ lat: rl, lon: rg, format: 'jsonv2', zoom: '10', addressdetails: '1', 'accept-language': 'en' });
+      const r = await upstream(`/reverse?${params}`);
+      const a = r?.address ?? {};
+      const name = a.city || a.town || a.municipality || a.village || a.county || a.state_district || null;
+      if (!name || !a.country_code) return null;
+      return {
+        name: String(name).slice(0, 120),
+        region: a.state || a.province || a.region || null,
+        lat: Number(r.lat),
+        lng: Number(r.lon),
+        externalId: r.osm_type && r.osm_id ? `osm:${r.osm_type}:${r.osm_id}` : `geo:${rl},${rg}`,
+        countryCode: String(a.country_code).toUpperCase(),
+      };
+    });
+  } catch {
+    return null;
+  }
+}
+
+/**
  * True if (lat, lng) is inside `country`. Uses the optional bounding box as a
  * fast reject, then reverse geocoding for the exact answer.
  */

@@ -23,7 +23,7 @@ export default function Home() {
   const [stories, setStories] = useState<Story[]>([]);
   const [error, setError] = useState<unknown>(null);
   const cc = user?.countryCode;
-  const origin = user?.home ?? (user?.city ? { lat: user.city.lat, lng: user.city.lng } : null);
+  const origin = user?.home ?? (user?.city ? { lat: user.city.lat, lng: user.city.lng } : user?.area ?? null);
 
   const load = useCallback(() => {
     if (!cc) return;
