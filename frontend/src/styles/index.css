@@ -779,9 +779,20 @@ html[lang='ur'] .auth__tagline {
   height: 1px;
   background: var(--line);
 }
-.google-slot {
-  min-height: 44px;
+.btn--google {
+  --bg: #fff;
+  --fg: #1f1f1f;
+  border-color: #c7c7c7;
+  gap: 10px;
+}
+.btn--google:hover {
+  --bg: #f6f8f8;
+}
+.signin-email .segmented {
   display: flex;
+}
+.signin-email .segmented button {
+  flex: 1;
   justify-content: center;
 }
 
@@ -1428,7 +1439,8 @@ html[lang='ur'] .luggage-tag__label {
   color: var(--muted);
   cursor: pointer;
 }
-.segmented button[aria-pressed='true'] {
+.segmented button[aria-pressed='true'],
+.segmented button[aria-selected='true'] {
   background: var(--harbour-700);
   color: #fff;
 }

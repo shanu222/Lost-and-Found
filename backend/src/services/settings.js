@@ -58,7 +58,13 @@ export const DEFINITIONS = {
   email_from: S('email', 'FoundBack <no-reply@example.com>'),
 
   // ---- Sign-in
-  google_client_id: S('signin', '', { public: true }),
+  // Firebase web app config (Project settings → General → Your apps). These
+  // values are public by design; access is protected by Firebase's
+  // authorised domains and by the server verifying every ID token.
+  firebase_api_key: S('signin', '', { public: true }),
+  firebase_auth_domain: S('signin', '', { public: true }),
+  firebase_project_id: S('signin', '', { public: true }),
+  firebase_app_id: S('signin', '', { public: true }),
 
   // ---- AI (translation + moderation)
   translate_provider: E('ai', 'none', ['none', 'ai', 'google', 'deepl']),
@@ -158,8 +164,9 @@ export async function publicConfig() {
   const out = {};
   for (const [key, def] of Object.entries(DEFINITIONS)) if (def.public) out[key] = values[key];
   out.translation_available = values.translation_enabled && values.translate_provider !== 'none';
-  out.google_signin_available = values.google_signin_enabled && Boolean(values.google_client_id);
-  out.email_signin_available = values.email_signin_enabled;
+  const firebaseReady = Boolean(values.firebase_api_key && values.firebase_auth_domain && values.firebase_project_id);
+  out.google_signin_available = values.google_signin_enabled && firebaseReady;
+  out.email_signin_available = values.email_signin_enabled && firebaseReady;
   out.push_available = values.push_enabled && Boolean(values.vapid_public_key && values.vapid_private_key);
   return out;
 }

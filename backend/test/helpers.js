@@ -1,15 +1,36 @@
 import request from 'supertest';
+import { SignJWT, createLocalJWKSet, exportJWK, generateKeyPair } from 'jose';
+import { __setFirebaseKeySet } from '../src/services/firebase.js';
 import { createApp } from '../src/app.js';
 
 export const app = createApp();
 
-/** Signs in with an emailed code and returns { agent, token, user }. */
-export async function signIn(email, _countryCode, language = 'en') {
+/**
+ * Signs in like the web app does after Firebase: with a Firebase ID token.
+ * Tokens are signed by a local test key (installed below) instead of Google's.
+ */
+export async function signIn(email, _countryCode, language = 'en', opts = {}) {
   const agent = request.agent(app);
-  const sent = await agent.post('/api/auth/email/request').send({ email, language }).expect(200);
-  const res = await agent.post('/api/auth/email/verify').send({ email, code: sent.body.devCode, language });
-  if (res.status >= 300) throw new Error(`sign-in failed: ${res.status} ${JSON.stringify(res.body)}`);
-  return { agent, token: res.body.accessToken, user: res.body.user, status: res.status };
+  const idToken = await firebaseToken({ email, ...opts });
+  const res = await agent.post('/api/auth/firebase').send({ idToken, language });
+  return { agent, token: res.body.accessToken, user: res.body.user, status: res.status, body: res.body };
+}
+
+const FIREBASE_PROJECT = process.env.FIREBASE_PROJECT_ID;
+const firebaseKeys = await generateKeyPair('RS256');
+const firebaseJwk = { ...(await exportJWK(firebaseKeys.publicKey)), kid: 'test-key', alg: 'RS256', use: 'sig' };
+__setFirebaseKeySet(createLocalJWKSet({ keys: [firebaseJwk] }));
+
+/** A Firebase-style ID token. Defaults: Google provider, verified email, uid derived from email. */
+export async function firebaseToken({ email, uid, provider = 'google.com', verified = true, project = FIREBASE_PROJECT, expiresIn = '1h', name } = {}) {
+  return new SignJWT({ email: email?.toLowerCase(), email_verified: verified, name, firebase: { sign_in_provider: provider }, auth_time: Math.floor(Date.now() / 1000) })
+    .setProtectedHeader({ alg: 'RS256', kid: 'test-key' })
+    .setIssuer(`https://securetoken.google.com/${project}`)
+    .setAudience(project)
+    .setSubject(uid ?? `uid-${email?.toLowerCase()}`)
+    .setIssuedAt()
+    .setExpirationTime(expiresIn)
+    .sign(firebaseKeys.privateKey);
 }
 
 export const auth = (token) => ({ Authorization: `Bearer ${token}` });

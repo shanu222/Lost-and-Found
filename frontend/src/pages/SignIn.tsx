@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 import { useAppConfig } from '../lib/appConfig';
 import { KeyIcon, LogoMark, PinIcon, ShieldIcon } from '../components/Icons';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
-import { EmailCodeForm } from '../components/EmailCodeForm';
+import { EmailPasswordForm } from '../components/EmailPasswordForm';
 import { TagIllustration } from '../components/TagIllustration';
 import { suggestCountry, useCountries } from '../lib/useCountries';
 import type { SessionResponse } from '../lib/types';
@@ -16,7 +16,7 @@ export default function SignIn() {
   const { acceptSession } = useAuth();
   const { config } = useAppConfig();
   const googleEnabled = config.google_signin_available;
-  const emailEnabled = config.email_signin_available !== false;
+  const emailEnabled = config.email_signin_available;
   const { countries } = useCountries();
   const [suggested, setSuggested] = useState<string | null>(null);
 
@@ -73,7 +73,7 @@ export default function SignIn() {
           </div>
           {googleEnabled && <GoogleButton onSession={onSession} />}
           {googleEnabled && emailEnabled && <div className="divider">{t('signIn.or')}</div>}
-          {emailEnabled && <EmailCodeForm onDone={onSession} />}
+          {emailEnabled && <EmailPasswordForm onDone={onSession} />}
           {!googleEnabled && !emailEnabled && <p className="muted">{t('signIn.unavailable')}</p>}
           <p className="small muted" style={{ margin: 0 }}>
             {t('signIn.terms')}

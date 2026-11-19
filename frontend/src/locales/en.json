@@ -44,7 +44,7 @@
   },
   "signIn": {
     "title": "Sign in to FoundBack",
-    "subtitle": "Continue with Google, or get a 6-digit code by email. No password needed.",
+    "subtitle": "Continue with Google, or use your email and a password.",
     "sendCode": "Send code",
     "sending": "Sending…",
     "codeLabel": "6-digit code",
@@ -55,7 +55,6 @@
     "resendIn": "You can request a new code in {{seconds}} s",
     "or": "or",
     "google": "Continue with Google",
-    "googleUnavailable": "Google sign-in is not set up yet.",
     "terms": "By continuing you agree to the Terms and the Privacy Policy.",
     "points": {
       "privateTitle": "Your details stay private",
@@ -66,11 +65,8 @@
       "localBody": "You see items, maps and guidance for the country you live in."
     },
     "emailLabel": "Email address",
-    "emailHint": "We'll email you a code. New here? This creates your account.",
-    "codeSentToEmail": "We sent a code to {{email}}.",
-    "checkSpam": "Can't find it? Check your spam or promotions folder.",
-    "changeEmail": "Use a different email",
-    "unavailable": "Sign-in is temporarily unavailable. Please try again later."
+    "unavailable": "Sign-in is temporarily unavailable. Please try again later.",
+    "signingIn": "Signing in…"
   },
   "onboarding": {
     "title": "Set up your profile",
@@ -233,7 +229,7 @@
     "ONBOARDING_INCOMPLETE": "A few profile steps are still missing.",
     "ACCOUNT_BANNED": "This account has been suspended.",
     "ACCOUNT_DELETED": "This account was deleted.",
-    "GOOGLE_DISABLED": "Google sign-in is not set up yet.",
+    "GOOGLE_DISABLED": "Google sign-in is turned off.",
     "NOT_FOUND": "We couldn't find that. It may have been removed, or it's in another country.",
     "FORBIDDEN": "You're not allowed to do that.",
     "INTERNAL": "Something went wrong. Please try again.",
@@ -287,7 +283,6 @@
     "LOCATION_INVALID": "That location isn't valid.",
     "LOCATION_UNKNOWN": "We couldn't tell which country you're in. Try again with precise location on.",
     "ACCOUNT_LOCKED": "Too many failed attempts. Try again in 15 minutes.",
-    "EMAIL_FAILED": "We couldn't send the email. Please try again in a moment.",
     "REGISTRATION_CLOSED": "New sign-ups are paused right now. Please try again later.",
     "MAINTENANCE": "FoundBack is being updated. Please check back soon.",
     "FEATURE_DISABLED": "This feature is turned off right now.",
@@ -295,14 +290,18 @@
     "SETTING_UNKNOWN": "Unknown setting.",
     "PASSWORD_WRONG": "Your current password isn't correct.",
     "PASSWORD_WEAK": "Use at least 10 characters with upper- and lower-case letters, a number and a symbol.",
-    "EMAIL_NOT_CONFIGURED": "Email sign-in isn't set up yet. Please continue with Google.",
     "AI_FAILED": "No AI provider answered. Check the keys and models.",
     "NO_EMAIL": "Your account has no email address.",
     "COUNTRY_REQUIRED": "Share your live location first.",
     "EMAIL_INVALID": "That email address doesn't look right.",
     "EMAIL_SIGNIN_DISABLED": "Email sign-in is turned off. Please continue with Google.",
     "STAFF_LOGIN_REQUIRED": "This is a staff account. Sign in from the staff sign-in page.",
-    "STARTING": "FoundBack is starting up. Please try again in a moment."
+    "STARTING": "FoundBack is starting up. Please try again in a moment.",
+    "EMAIL_NOT_VERIFIED": "Please verify your email address first.",
+    "ACCOUNT_CONFLICT": "This email is linked to a different sign-in. Please contact support.",
+    "PROVIDER_NOT_ALLOWED": "Please sign in with Google or email.",
+    "SIGNIN_NOT_CONFIGURED": "Sign-in isn't set up yet. Please try again later.",
+    "EMAIL_REQUIRED": "Your account needs an email address."
   },
   "status": {
     "waiting": "Waiting for owner",
@@ -1056,8 +1055,8 @@
       "features": "Switch features on or off for everyone.",
       "security": "How strictly location and staff sign-in are enforced.",
       "limits": "Daily limits and time windows that protect against abuse.",
-      "email": "Used for sign-in codes, notifications and staff sign-in codes. Without a Resend key, email sign-in is unavailable in production.",
-      "signin": "Paste the Web client ID from Google Cloud to show \"Continue with Google\".",
+      "email": "Used for notifications and staff sign-in codes. User sign-in emails (verification, password reset) are sent by Firebase.",
+      "signin": "From Firebase console → Project settings → General → Your apps → Web app config. Also enable Google and Email/Password under Authentication → Sign-in method, and add your website under Authorised domains.",
       "ai": "Translation of posts and chat, and photo moderation. Providers are tried in order until one answers.",
       "location": "Optional: lets the VPN check work everywhere by looking up the country of each IP address.",
       "push": "Changing these keys signs every device out of push notifications.",
@@ -1089,7 +1088,6 @@
       "country_change_cooldown_days": "Days between country changes",
       "resend_api_key": "Resend API key",
       "email_from": "Sender (From) address",
-      "google_client_id": "Google OAuth client ID",
       "translate_provider": "Translation provider",
       "moderation_provider": "Photo moderation",
       "ai_provider_order": "AI provider order",
@@ -1115,7 +1113,11 @@
       "r2_access_key_id": "R2 access key ID",
       "r2_secret_access_key": "R2 secret access key",
       "r2_bucket": "R2 bucket",
-      "email_signin_enabled": "Email code sign-in"
+      "email_signin_enabled": "Email + password sign-in",
+      "firebase_api_key": "Firebase apiKey",
+      "firebase_auth_domain": "Firebase authDomain",
+      "firebase_project_id": "Firebase projectId",
+      "firebase_app_id": "Firebase appId"
     },
     "options": {
       "block": "Block",
@@ -1136,5 +1138,34 @@
     "passwordRules": "At least 10 characters with upper- and lower-case letters, a number and a symbol.",
     "changePassword": "Change password",
     "passwordChanged": "Password changed. Other sessions were signed out."
+  },
+  "firebase": {
+    "emailOptions": "Email sign-in options",
+    "haveAccount": "Sign in",
+    "newAccount": "Create account",
+    "password": "Password",
+    "passwordHint": "At least 8 characters.",
+    "signIn": "Sign in with email",
+    "createAccount": "Create account",
+    "forgot": "Forgot password?",
+    "resetBody": "Enter your email and we'll send you a link to set a new password.",
+    "sendReset": "Send reset link",
+    "resetSent": "If an account exists for {{email}}, a reset link is on its way. Check your inbox and spam folder.",
+    "backToSignIn": "Back to sign in",
+    "verifyTitle": "Verify your email",
+    "verifyBody": "We sent a link to {{email}}. Open it to confirm your address, then come back here. Check your spam folder if you don't see it.",
+    "verifiedContinue": "I've verified — continue",
+    "resendVerification": "Resend link",
+    "verificationResent": "A new link is on its way.",
+    "wrongPassword": "Email or password is not correct.",
+    "emailInUse": "An account already exists for this email. Sign in instead, or use Google if you signed up with it.",
+    "weakPassword": "Use a password with at least 8 characters.",
+    "tooMany": "Too many attempts. Please wait a few minutes and try again.",
+    "popupBlocked": "Your browser blocked the Google window. Allow pop-ups for this site and try again.",
+    "cancelled": "Sign-in was cancelled.",
+    "unauthorizedDomain": "This website address isn't allowed to sign in yet. An admin needs to add it in Firebase → Authentication → Settings → Authorised domains.",
+    "notEnabled": "This sign-in method isn't turned on yet. Please use another one.",
+    "differentMethod": "This email already uses a different sign-in method. Try Google or email and password.",
+    "generic": "Sign-in failed. Please try again."
   }
 }

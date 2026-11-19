@@ -1,6 +1,7 @@
 // Session state for the whole app.
 // On load we try a silent refresh (httpOnly cookie) to restore the session.
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { firebaseSignOut } from '../lib/firebase';
 import { api, setAccessToken, setSessionLostHandler } from '../lib/api';
 import type { Me, SessionResponse } from '../lib/types';
 import i18n, { setLanguage } from '../i18n';
@@ -66,6 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     await api('/auth/logout', { method: 'POST' }).catch(() => undefined);
+    await firebaseSignOut();
     clear();
   }, [clear]);
 

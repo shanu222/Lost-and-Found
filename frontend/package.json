@@ -17,6 +17,7 @@
     "@fontsource/noto-nastaliq-urdu": "^5.3.0",
     "@fontsource/noto-sans": "^5.3.0",
     "@fontsource/noto-sans-arabic": "^5.3.0",
+    "firebase": "^13.4.0",
     "i18next": "^27.1.5",
     "leaflet": "^1.9.4",
     "qrcode": "^1.5.4",
@@ -45,5 +46,8 @@
     "workbox-precaching": "^7.4.1",
     "workbox-routing": "^7.4.1",
     "workbox-strategies": "^7.4.1"
+  },
+  "overrides": {
+    "@grpc/grpc-js": "^1.14.7"
   }
 }

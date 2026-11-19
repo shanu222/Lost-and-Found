@@ -1021,7 +1021,6 @@
       "twilio_account_sid": "",
       "twilio_auth_token": "",
       "twilio_from": "",
-      "google_client_id": "",
       "translate_provider": "",
       "moderation_provider": "",
       "ai_provider_order": "",

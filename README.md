@@ -11,7 +11,7 @@ Each user lives in one **country space**: they only see items, maps, matches, sa
 ## Admin panel and live settings
 
 - **Staff sign-in:** `/admin/login` — email + password, then a 6-digit code emailed to the staff address. Five wrong passwords lock the account for 15 minutes; every attempt is in the audit log. The first admin is created on start from `ADMIN_EMAIL` + `ADMIN_INITIAL_PASSWORD` (then change the password in **Admin → Settings → My staff account**).
-- **Admin → Settings** changes the website and the installed phone app live (within ~3 minutes, no redeploy): maintenance mode, announcement banner, new sign-ups on/off, feature switches (email-code sign-in, Google sign-in, translation, push, travel mode), limits (posts/claims per day, claim expiry, travel length, country-change cooldown), location/VPN policy, and **every integration key** — Resend, Google client ID, OpenAI/Gemini/OpenRouter, Google Translate/DeepL, ipinfo, VAPID and R2.
+- **Admin → Settings** changes the website and the installed phone app live (within ~3 minutes, no redeploy): maintenance mode, announcement banner, new sign-ups on/off, feature switches (email + password sign-in, Google sign-in, translation, push, travel mode), limits (posts/claims per day, claim expiry, travel length, country-change cooldown), location/VPN policy, and **every integration key** — Resend, Firebase web config, OpenAI/Gemini/OpenRouter, Google Translate/DeepL, ipinfo, VAPID and R2.
 - Keys are stored AES-256-GCM encrypted, are write-only (the panel shows `••••1234`), and changes are audit-logged by name only. A value set in the panel overrides the Railway variable; **Remove** falls back to Railway.
 - Core secrets stay in Railway only: `DATABASE_URL`, `JWT_ACCESS_SECRET`, `ENCRYPTION_KEY`, `HASH_PEPPER`.
 - The installed app (PWA) and any future native app read the same live config from `GET /api/meta/app-config`.
@@ -30,7 +30,7 @@ Each user lives in one **country space**: they only see items, maps, matches, sa
 - [Local setup](#local-setup)
 - [Demo accounts](#demo-accounts)
 - [Environment variables](#environment-variables)
-- [Deploying](#deploying) (Railway, Vercel, Cloudflare R2, Google, email)
+- [Deploying](#deploying) (Railway, Vercel, Cloudflare R2, Firebase)
 - [Security model](#security-model)
 - [Data model](#data-model)
 - [Adding a country](#adding-a-country)
@@ -94,7 +94,7 @@ backend/                     Express API (Railway service root)
     lib/                     crypto (AES-256-GCM, blind index), geo, errors, audit, validation
     middleware/              auth, rate limits, error handler
     routes/                  auth, me (onboarding/settings/export/delete), meta
-    services/                tokens, otp (email codes), email, geocode (Nominatim), countries, users
+    services/                tokens, firebase (ID-token verification), email, geocode (Nominatim), countries, users
   test/                      Vitest + Supertest against a real Postgres
   railway.json
 frontend/                    React app (Vercel project root)
@@ -102,7 +102,7 @@ frontend/                    React app (Vercel project root)
     i18n/                    i18next setup + language list
     locales/*.json           One file per language (en, ur, ar complete; others scaffolded)
     auth/AuthProvider.tsx    Session state, silent refresh, language sync
-    components/              Header, LanguageSwitcher, EmailCodeForm, CountryList, HomeAreaMap…
+    components/              Header, LanguageSwitcher, GoogleButton, EmailPasswordForm, CountryList, HomeAreaMap…
     pages/                   SignIn, Onboarding, Home, Settings, NotFound
     styles/index.css         Design tokens & styles (logical properties for RTL)
   scripts/i18n-tools.mjs     Scaffold missing keys / print translation coverage
@@ -180,7 +180,7 @@ It also seeds popular cities, bounding boxes and 13 found items (with encrypted 
 | `COOKIE_SAMESITE` | no | `lax` (default, with rewrite) or `none` (direct cross-site calls) |
 | `ENCRYPTION_KEY` | yes | 32 bytes, base64. AES-256-GCM key for ID numbers, IMEI, hidden answers. **Back it up — data is unreadable without it.** |
 | `HASH_PEPPER` | yes | ≥ 32 chars. HMAC key for blind indexes, OTP and handover codes |
-| `GOOGLE_CLIENT_ID` | no | Enables Google sign-in |
+| `FIREBASE_API_KEY`, `FIREBASE_AUTH_DOMAIN`, `FIREBASE_PROJECT_ID`, `FIREBASE_APP_ID` | for user sign-in | Firebase web app config (or set in Admin → Settings → Sign-in) |
 | `OTP_DEV_ECHO` | no | `true` returns codes to the app; ignored when `NODE_ENV=production` |
 | `RESEND_API_KEY` | no | Emails are logged instead of sent when empty |
 | `EMAIL_FROM` | no | Verified Resend sender, e.g. `FoundBack <no-reply@yourdomain.com>` |
@@ -204,7 +204,6 @@ It also seeds popular cities, bounding boxes and 13 found items (with encrypted 
 | Variable | Description |
 |---|---|
 | `VITE_API_URL` | Leave empty to use the `/api` rewrite (recommended). Set to the Railway URL only for direct calls. |
-| `VITE_GOOGLE_CLIENT_ID` | Same client ID as the API. Google sign-in is hidden when empty. |
 
 ## Deploying
 
@@ -222,7 +221,7 @@ Migrations run on every start, so new deploys update the schema automatically.
 
 1. **Add New → Project** → import this repository. Set **Root Directory** to `frontend`. Framework preset: Vite (detected).
 2. Edit `frontend/vercel.json`: replace `https://lost-and-found-production-01a31278.up.railway.app` in the `/api` rewrite with your Railway domain and commit.
-3. Add `VITE_GOOGLE_CLIENT_ID` if you use Google sign-in. Leave `VITE_API_URL` empty.
+3. No environment variables are needed (sign-in config comes from the API). Leave `VITE_API_URL` empty.
 4. Deploy. Add the Vercel domain (and `https://*.vercel.app` for previews) to the API's `CORS_ORIGINS`.
 
 `vercel.json` also sets a strict Content-Security-Policy (self-hosted fonts, OSM tiles, Google Identity, R2 images), HSTS, `X-Frame-Options: DENY`, `nosniff`, a referrer policy and a permissions policy (geolocation and camera only for the app itself).
@@ -254,15 +253,23 @@ Object keys are `{country}/{yyyy-mm}/{uuid}.jpg` with `{uuid}_thumb.jpg` thumbna
 
 ### 4. Google sign-in
 
-Google Cloud Console → **APIs & Services → Credentials → Create OAuth client ID → Web application**. Add your Vercel domain (and `http://localhost:5173`) to **Authorized JavaScript origins**. Use the client ID for both `GOOGLE_CLIENT_ID` and `VITE_GOOGLE_CLIENT_ID`.
+Google sign-in runs through Firebase — see section 5.
 
-### 5. Email sign-in
+### 5. Firebase sign-in (users)
 
-Users sign in with Google or with a 6-digit code emailed through Resend (the same `RESEND_API_KEY` / `EMAIL_FROM`). In production, email sign-in needs a Resend key; Admin → Settings → Features can switch it off. There is no SMS.
+Users sign in with **Google** or **email + password** through Firebase Authentication. Staff keep the built-in `/admin/login` (password + emailed 2-step code).
+
+1. Firebase console → **Add project** (or use an existing Google Cloud project).
+2. **Build → Authentication → Get started → Sign-in method:** enable **Google** (pick a support email) and **Email/Password**.
+3. **Authentication → Settings → Authorised domains:** add your Vercel domain (and any custom domain).
+4. **Project settings → General → Your apps → Add app → Web (</>)**: copy `apiKey`, `authDomain`, `projectId`, `appId`.
+5. Paste them into **Admin → Settings → Sign-in** (or Railway `FIREBASE_API_KEY`, `FIREBASE_AUTH_DOMAIN`, `FIREBASE_PROJECT_ID`, `FIREBASE_APP_ID`).
+
+The API verifies every Firebase ID token itself (Google's public keys, issuer and audience = your project ID), so no service-account key is needed. Email/password users must verify their address before they can use FoundBack. A Google account and an email/password account with the same verified address are the same FoundBack account.
 
 ## Security model
 
-- **Authentication.** Emailed one-time code (6 digits, HMAC-hashed, 10-minute expiry, 5 attempts, 3 codes per 10 minutes per address) or Google ID token. A Google account and an email-code account with the same verified address are the same account. Staff accounts can only use the password + emailed 2-step login. Access tokens are 15-minute JWTs kept in memory only. Refresh tokens are opaque, stored hashed, sent as an `httpOnly` cookie scoped to `/api/auth`, **rotated on every use**; re-using an old one revokes the whole session family (theft detection), with a 10-second grace window for two tabs refreshing at once.
+- **Authentication.** Users: Firebase Authentication (Google or verified email + password); the API verifies the Firebase ID token signature, issuer, audience, expiry and provider before issuing its own session. Staff accounts can only use the password + emailed 2-step login. Access tokens are 15-minute JWTs kept in memory only. Refresh tokens are opaque, stored hashed, sent as an `httpOnly` cookie scoped to `/api/auth`, **rotated on every use**; re-using an old one revokes the whole session family (theft detection), with a 10-second grace window for two tabs refreshing at once.
 - **Field encryption.** AES-256-GCM (`v1:iv:tag:ciphertext`, versioned for key rotation) for ID numbers, IMEI/serials and hidden answers. Lookups and comparisons use keyed HMAC "blind indexes", never plaintext. Email addresses are shown masked to moderators (`s•••@example.com`).
 - **Country scoping.** Enforced on the server from the user row. Cities, home pins (reverse-geocoded) and the live GPS location must belong to the user's country. Nominatim city results are returned with an HMAC-signed reference, so the client cannot invent a city or move it to another country.
 - **Input validation.** zod on every body, query and parameter; consistent errors: `{ "error": { "code", "message", "details"? } }`. The web app translates `code` into the user's language.
@@ -331,7 +338,7 @@ cd backend && npm test     # needs Postgres; uses TEST_DATABASE_URL or postgresq
 cd frontend && npm test
 ```
 
-The API suite (64 tests) runs against a real database that it resets and seeds. It covers email-code sign-in (incl. staff accounts being refused), attempt limits and throttling, refresh-token rotation and re-use detection, logout, encryption and blind indexes, onboarding rules (city/home pin must be in the user's country, signed city references cannot be forged), country scoping of counters and city search, the 30-day country-change cooldown, data export, account deletion and the error format.
+The API suite (64 tests) runs against a real database that it resets and seeds. It covers Firebase sign-in (forged/expired/other-project tokens, unverified emails, account linking, staff accounts refused), attempt limits and throttling, refresh-token rotation and re-use detection, logout, encryption and blind indexes, onboarding rules (city/home pin must be in the user's country, signed city references cannot be forged), country scoping of counters and city search, the 30-day country-change cooldown, data export, account deletion and the error format.
 
 The web suite checks English as the default, instant switching to Urdu/Arabic with RTL, Arabic plural rules, fallback to English for missing keys and unsupported languages, and that Urdu and Arabic contain every English string.
 
@@ -351,7 +358,7 @@ It also covers posting (EXIF stripping, approximate locations, blocked contact d
 
 ### Product decisions taken (change them if you prefer otherwise)
 
-- **No SMS.** Accounts are email (code) or Google. Notifications go by push, email and in-app only.
+- **No SMS.** Accounts are Google or email + password (Firebase). Notifications go by push, email and in-app only.
 - **Travel mode** also lets the traveller open and claim items in that one other country (otherwise a match abroad could never be claimed).
 - **Chat** stays masked even after approval; email addresses are only revealed on the handover screen when both people opt in.
 - **Rewards** are recorded for the owner's records only; FoundBack never handles money.

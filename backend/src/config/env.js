@@ -8,10 +8,31 @@ const bool = z
   .optional()
   .transform((v) => v === 'true' || v === '1');
 
+// Railway: accept DATABASE_URL, or the other names a Postgres service exposes,
+// or the individual PG* variables. An unresolved "${{...}}" reference counts as
+// missing (it means the referenced service name doesn't exist).
+function resolveDatabaseUrl() {
+  const usable = (v) => (v && !v.includes('${{') ? v : '');
+  const direct = usable(process.env.DATABASE_URL) || usable(process.env.DATABASE_PRIVATE_URL) || usable(process.env.DATABASE_PUBLIC_URL) || usable(process.env.POSTGRES_URL);
+  if (direct) return direct;
+  const { PGHOST, PGUSER, PGPASSWORD, PGDATABASE, PGPORT } = process.env;
+  if (PGHOST && PGUSER && PGDATABASE) {
+    const auth = PGPASSWORD ? `${encodeURIComponent(PGUSER)}:${encodeURIComponent(PGPASSWORD)}` : encodeURIComponent(PGUSER);
+    return `postgresql://${auth}@${PGHOST}:${PGPORT || 5432}/${PGDATABASE}`;
+  }
+  return '';
+}
+process.env.DATABASE_URL = resolveDatabaseUrl();
+
 const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().default(4000),
-  DATABASE_URL: z.string().min(1, 'DATABASE_URL is required — on Railway add a PostgreSQL service and set DATABASE_URL=${{Postgres.DATABASE_URL}}'),
+  DATABASE_URL: z
+    .string()
+    .min(
+      1,
+      'DATABASE_URL is empty. On Railway: (1) add a PostgreSQL service to THIS project, (2) in this service\'s Variables use "Add Reference" → <your Postgres service> → DATABASE_URL. The name inside ${{…}} must match the Postgres service name exactly.',
+    ),
   DATABASE_SSL: bool,
 
   // Comma-separated list of allowed browser origins (Vercel domain + previews).
@@ -37,7 +58,7 @@ const schema = z.object({
   NOMINATIM_URL: z.string().default('https://nominatim.openstreetmap.org'),
   NOMINATIM_EMAIL: z.string().optional().default(''),
 
-  // Note: API keys and integrations (R2, Resend, Twilio, Google, AI, VAPID…)
+  // Note: API keys and integrations (R2, Resend, Firebase, AI, VAPID…)
   // are read by services/settings.js so the admin panel can change them live.
   SIGNED_URL_TTL_SECONDS: z.coerce.number().default(300),
   // Public base URL of this API (used for locally stored file URLs).

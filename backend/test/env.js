@@ -6,6 +6,9 @@ process.env.ENCRYPTION_KEY = Buffer.alloc(32, 7).toString('base64');
 process.env.HASH_PEPPER = 'test-pepper-test-pepper-test-pepper-0123456789';
 process.env.OTP_DEV_ECHO = 'true';
 process.env.RESEND_API_KEY = '';
+process.env.FIREBASE_PROJECT_ID = 'foundback-test';
+process.env.FIREBASE_API_KEY = 'test-api-key';
+process.env.FIREBASE_AUTH_DOMAIN = 'foundback-test.firebaseapp.com';
 process.env.GOOGLE_CLIENT_ID = '';
 process.env.CORS_ORIGINS = 'http://localhost:5173';
 // Test-only staff account created by bootstrapAdmin in global setup.

@@ -96,7 +96,7 @@ describe('staff sign-in', () => {
     expect(locked.status).toBe(423);
   });
 
-  it('email-code users cannot use the staff login or the settings API', async () => {
+  it('regular users cannot use the staff login or the settings API', async () => {
     const u = await onboardedUser('PK');
     await u.agent.get('/api/admin/settings').set(auth(u.token)).expect(403);
   });
@@ -145,9 +145,7 @@ describe('live settings', () => {
   it('closing registration stops new sign-ups only', async () => {
     const a = await adminSignIn();
     await a.agent.patch('/api/admin/settings').set(auth(a.token)).send({ changes: { registration_open: false } }).expect(200);
-    const email = freshEmail('PK');
-    const sent = await request(app).post('/api/auth/email/request').send({ email }).expect(200);
-    const res = await request(app).post('/api/auth/email/verify').send({ email, code: sent.body.devCode });
+    const res = await signIn(freshEmail('PK'), 'PK');
     expect(res.body.error.code).toBe('REGISTRATION_CLOSED');
     await a.agent.patch('/api/admin/settings').set(auth(a.token)).send({ changes: { registration_open: null } }).expect(200);
   });
