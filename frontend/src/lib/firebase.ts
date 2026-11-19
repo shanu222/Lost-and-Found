@@ -9,6 +9,10 @@ import type { SessionResponse } from './types';
 type FirebaseAuthModule = typeof import('firebase/auth');
 let loaded: Promise<{ auth: Auth; m: FirebaseAuthModule }> | null = null;
 let loadedFor = '';
+// The resolved SDK, so a click can open Google's pop-up synchronously.
+// Browsers only allow pop-ups opened directly from a click; awaiting a
+// network download first makes them block it.
+let ready: { auth: Auth; m: FirebaseAuthModule } | null = null;
 
 export function firebaseConfigured() {
   const c = getAppConfig();
@@ -35,9 +39,14 @@ async function firebase() {
       });
       return { auth, m };
     })();
-    loaded.catch(() => (loaded = null));
+    loaded.then((v) => (ready = v)).catch(() => (loaded = null));
   }
   return loaded;
+}
+
+/** Downloads and initialises Firebase ahead of the click (sign-in page mount). */
+export function preloadFirebase() {
+  if (firebaseConfigured()) firebase().catch(() => undefined);
 }
 
 /** Exchanges the Firebase ID token for a FoundBack session. */
@@ -54,13 +63,40 @@ export class NeedsVerification extends Error {
   }
 }
 
-export async function signInWithGoogle(language: string) {
-  const { auth, m } = await firebase();
-  auth.languageCode = language;
+function googleProvider(m: FirebaseAuthModule) {
   const provider = new m.GoogleAuthProvider();
   provider.setCustomParameters({ prompt: 'select_account' });
-  const cred = await m.signInWithPopup(auth, provider);
-  return exchange(cred.user, language);
+  return provider;
+}
+
+export async function signInWithGoogle(language: string) {
+  // Must reach signInWithPopup without awaiting anything when the SDK is ready.
+  const sdk = ready ?? (await firebase());
+  const { auth, m } = sdk;
+  auth.languageCode = language;
+  try {
+    const cred = await m.signInWithPopup(auth, googleProvider(m));
+    return exchange(cred.user, language);
+  } catch (err) {
+    // Pop-up blocked (strict browsers, some in-app browsers): use a full-page redirect.
+    if ((err as { code?: string })?.code === 'auth/popup-blocked') {
+      sessionStorage.setItem('fb_redirect_lang', language);
+      await m.signInWithRedirect(auth, googleProvider(m));
+      return new Promise<never>(() => undefined); // the page navigates away
+    }
+    throw err;
+  }
+}
+
+/** Finishes a redirect sign-in when the user comes back to /signin. */
+export async function completeRedirectSignIn(): Promise<SessionResponse | null> {
+  if (!firebaseConfigured()) return null;
+  const language = sessionStorage.getItem('fb_redirect_lang');
+  if (!language) return null;
+  sessionStorage.removeItem('fb_redirect_lang');
+  const { auth, m } = await firebase();
+  const result = await m.getRedirectResult(auth);
+  return result?.user ? exchange(result.user, language) : null;
 }
 
 const actionSettings = () => ({ url: `${window.location.origin}/signin`, handleCodeInApp: false });

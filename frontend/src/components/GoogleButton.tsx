@@ -1,7 +1,7 @@
 // "Continue with Google" through Firebase Authentication (popup).
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { firebaseErrorKey, signInWithGoogle } from '../lib/firebase';
+import { completeRedirectSignIn, firebaseErrorKey, preloadFirebase, signInWithGoogle } from '../lib/firebase';
 import type { SessionResponse } from '../lib/types';
 import { useErrorMessage } from '../lib/useErrorMessage';
 import { Alert } from './ui';
@@ -11,6 +11,25 @@ export function GoogleButton({ onSession }: { onSession: (s: SessionResponse) =>
   const errorMessage = useErrorMessage();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    preloadFirebase();
+    // Coming back from the redirect fallback.
+    let cancelled = false;
+    completeRedirectSignIn()
+      .then((session) => {
+        if (session && !cancelled) onSession(session);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        const key = firebaseErrorKey(err);
+        setError(key ? t(key) : errorMessage(err));
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const go = async () => {
     setError(null);
